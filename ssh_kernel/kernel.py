@@ -71,7 +71,7 @@ class BashKernel(Kernel):
             self._banner = check_output(['bash', '--version']).decode('utf-8')
         return self._banner
 
-    language_info = {'name': 'bash',
+    language_info = {'name': 'ssh',
                      'codemirror_mode': 'shell',
                      'mimetype': 'text/x-sh',
                      'file_extension': '.sh'}
