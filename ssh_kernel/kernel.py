@@ -1,5 +1,7 @@
 from ipykernel.kernelbase import Kernel
-from pexpect import replwrap, EOF
+from pexpect import EOF
+from pexpect import pxssh
+from pexpect import replwrap
 import pexpect
 
 from subprocess import check_output
@@ -79,6 +81,15 @@ class BashKernel(Kernel):
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
         self._start_bash()
+        self._start_ssh()
+
+    def _start_ssh(self):
+        s = pxssh.pxssh(echo=False)
+        if s.login('localhost', 'temp', 'temp'):
+            self._pxssh = s
+        else:
+            print("SSH session failed on login.")
+            raise str(s)
 
     def _start_bash(self):
         # Signal handlers are inherited by forked processes, and we can't easily
@@ -126,7 +137,6 @@ class BashKernel(Kernel):
                 else:
                     self.send_response(self.iopub_socket, 'display_data', data)
 
-
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         self.silent = silent
@@ -140,7 +150,12 @@ class BashKernel(Kernel):
             # output.  Also note that the return value from
             # run_command is not needed, because the output was
             # already sent by IREPLWrapper.
-            self.bashwrapper.run_command(code.rstrip(), timeout=None)
+            s = self._pxssh
+            s.sendline(code)
+            s.prompt()
+            output = s.before.decode('utf-8')
+            self.process_output(output)
+
         except KeyboardInterrupt:
             self.bashwrapper.child.sendintr()
             interrupted = True
