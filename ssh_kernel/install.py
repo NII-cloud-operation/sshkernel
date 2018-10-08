@@ -31,7 +31,7 @@ def _is_root():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description='Install KernelSpec for Bash Kernel'
+        description='Install KernelSpec for SSH Kernel'
     )
     prefix_locations = parser.add_mutually_exclusive_group()
 
