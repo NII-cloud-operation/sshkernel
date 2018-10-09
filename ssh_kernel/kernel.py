@@ -10,7 +10,7 @@ import os.path
 import re
 import signal
 
-__version__ = '0.7.1'
+__version__ = '0.1.0'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
