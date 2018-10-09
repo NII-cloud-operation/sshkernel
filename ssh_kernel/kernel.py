@@ -117,21 +117,17 @@ class SSHKernel(Kernel):
 
         interrupted = False
         try:
-            # Note: timeout=None tells IREPLWrapper to do incremental
-            # output.  Also note that the return value from
-            # run_command is not needed, because the output was
-            # already sent by IREPLWrapper.
             s = self._pxssh
             s.sendline(code)
-            s.prompt()
+            s.prompt()  # wait
             output = s.before.decode('utf-8')
             self.process_output(output)
 
         except KeyboardInterrupt:
-            self.bashwrapper.child.sendintr()
+            self._pxssh.sendintr()
             interrupted = True
-            self.bashwrapper._expect_prompt()
-            output = self.bashwrapper.child.before
+            self._pxssh._expect_prompt()
+            output = self._pxssh.before.decode('utf-8')
             self.process_output(output)
         except EOF:
             output = 'Restarting SSH session'
@@ -142,7 +138,7 @@ class SSHKernel(Kernel):
             return {'status': 'abort', 'execution_count': self.execution_count}
 
         try:
-            exitcode = int(self.bashwrapper.run_command('echo $?').rstrip())
+            exitcode = int(self._pxssh.sendline('echo $?').rstrip())
         except Exception:
             exitcode = 1
 
