@@ -80,7 +80,6 @@ class BashKernel(Kernel):
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._start_bash()
         self._start_ssh()
 
     def _start_ssh(self):
@@ -90,34 +89,6 @@ class BashKernel(Kernel):
         else:
             print("SSH session failed on login.")
             raise str(s)
-
-    def _start_bash(self):
-        # Signal handlers are inherited by forked processes, and we can't easily
-        # reset it from the subprocess. Since kernelapp ignores SIGINT except in
-        # message handlers, we need to temporarily reset the SIGINT handler here
-        # so that bash and its children are interruptible.
-        sig = signal.signal(signal.SIGINT, signal.SIG_DFL)
-        try:
-            # Note: the next few lines mirror functionality in the
-            # bash() function of pexpect/replwrap.py.  Look at the
-            # source code there for comments and context for
-            # understanding the code here.
-            bashrc = os.path.join(os.path.dirname(pexpect.__file__), 'bashrc.sh')
-            child = pexpect.spawn("bash", ['--rcfile', bashrc], echo=False,
-                                  encoding='utf-8', codec_errors='replace')
-            ps1 = replwrap.PEXPECT_PROMPT[:5] + u'\[\]' + replwrap.PEXPECT_PROMPT[5:]
-            ps2 = replwrap.PEXPECT_CONTINUATION_PROMPT[:5] + u'\[\]' + replwrap.PEXPECT_CONTINUATION_PROMPT[5:]
-            prompt_change = u"PS1='{0}' PS2='{1}' PROMPT_COMMAND=''".format(ps1, ps2)
-
-            # Using IREPLWrapper to get incremental output
-            self.bashwrapper = IREPLWrapper(child, u'\$', prompt_change,
-                                            extra_init_cmd="export PAGER=cat",
-                                            line_output_callback=self.process_output)
-        finally:
-            signal.signal(signal.SIGINT, sig)
-
-        # Register Bash function to write image data to temporary file
-        self.bashwrapper.run_command(image_setup_cmd)
 
     def process_output(self, output):
         if not self.silent:
