@@ -56,8 +56,8 @@ class IREPLWrapper(replwrap.REPLWrapper):
         # Prompt received, so return normally
         return pos
 
-class BashKernel(Kernel):
-    implementation = 'bash_kernel'
+class SSHKernel(Kernel):
+    implementation = 'ssh_kernel'
     implementation_version = __version__
 
     @property
@@ -134,8 +134,8 @@ class BashKernel(Kernel):
             output = self.bashwrapper.child.before
             self.process_output(output)
         except EOF:
-            output = self.bashwrapper.child.before + 'Restarting Bash'
-            self._start_bash()
+            output = 'Restarting SSH session'
+            self._start_ssh()
             self.process_output(output)
 
         if interrupted:
