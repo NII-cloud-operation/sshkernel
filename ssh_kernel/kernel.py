@@ -1,4 +1,5 @@
 from ipykernel.kernelbase import Kernel
+import paramiko
 from pexpect import EOF
 from pexpect import pxssh
 from pexpect import replwrap
@@ -42,7 +43,16 @@ class SSHKernel(Kernel):
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._start_ssh()
+
+        opts = dict(user='temp', password='temp')
+        self._connect(**opts)
+
+    def _connect(self, **opts):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+        client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
+        self._client = client
 
     def _start_ssh(self):
         s = pxssh.pxssh(echo=False)
@@ -52,13 +62,19 @@ class SSHKernel(Kernel):
             print("SSH session failed on login.")
             raise str(s)
 
+    def _process_output(self, buf):
+        for l in buf:
+            self.process_output(l)
+
     def process_output(self, output):
         if not self.silent:
-            image_filenames, output = extract_image_filenames(output)
+            # image_filenames, output = extract_image_filenames(output)
 
             # Send standard output
             stream_content = {'name': 'stdout', 'text': output}
             self.send_response(self.iopub_socket, 'stream', stream_content)
+
+            return
 
             # Send images, if any
             for filename in image_filenames:
@@ -79,16 +95,17 @@ class SSHKernel(Kernel):
 
         interrupted = False
         try:
-            s = self._pxssh
-            s.sendline(code)
-            s.prompt()  # wait
-            output = s.before.decode('utf-8')
-            self.process_output(output)
+            _, o, e = self._client.exec_command(code)
+            self.process_output(o)
+
+            # s = self._pxssh
+            # s.sendline(code)
+            # s.prompt()  # wait
+            # output = s.before.decode('utf-8')
+            # self.process_output(output)
 
         except KeyboardInterrupt:
-            self._pxssh.sendintr()
             interrupted = True
-            self._pxssh._expect_prompt()
             output = self._pxssh.before.decode('utf-8')
             self.process_output(output)
         except EOF:
