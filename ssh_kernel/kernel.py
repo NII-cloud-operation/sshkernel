@@ -74,18 +74,6 @@ class SSHKernel(Kernel):
             stream_content = {'name': 'stdout', 'text': output}
             self.send_response(self.iopub_socket, 'stream', stream_content)
 
-            return
-
-            # Send images, if any
-            for filename in image_filenames:
-                try:
-                    data = display_data_for_image(filename)
-                except ValueError as e:
-                    message = {'name': 'stdout', 'text': str(e)}
-                    self.send_response(self.iopub_socket, 'stream', message)
-                else:
-                    self.send_response(self.iopub_socket, 'display_data', data)
-
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         self.silent = silent
@@ -97,12 +85,6 @@ class SSHKernel(Kernel):
         try:
             _, o, e = self._client.exec_command(code)
             self.process_output(o)
-
-            # s = self._pxssh
-            # s.sendline(code)
-            # s.prompt()  # wait
-            # output = s.before.decode('utf-8')
-            # self.process_output(output)
 
         except KeyboardInterrupt:
             interrupted = True
