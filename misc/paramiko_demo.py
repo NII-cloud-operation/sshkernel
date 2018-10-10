@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import select
 import sys
@@ -18,56 +19,36 @@ class ClientManager():
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
-        client.connect('localhost')
+        client.connect('localhost', username="temp", password="temp", timeout=1)
 
         self.client = client
 
-    def ls(self):
-        client = self.client
-
-        # "session" is a type of Channel
-
-        # Channel is an abstraction for SSH2 channel
-        # like a socket
-        t = client.get_transport()
-        ch = client.get_transport().open_session()
-        pty = ch.get_pty()      # This is usually used right after creating a client channel
-        sh = ch.invoke_shell()  # Normally you would call get_pty before this
-
-        #embed()
-
-        stdin, stdout, stderr = client.exec_command(
-            'date; echo sleep 3...; sleep 3; ls')
-
-        print(client.get_transport())
-
-        for line in stdout:
-            print('paramiko> ' + line.strip('\n'))
+    async def handler(self, buf):
+        for l in buf:
+            sys.stdout.write('paramiko> ' + l)
 
     def ls2(self):
         client = self.client
 
-        def handler(ch):
-            while True:
-                i, o, e = select.select([ch], [], [])
-
-                x = u(ch.recv(1024))
-                if len(x) == 0:
-                    sys.stdout.write("\n*** EOF\n")
-                    break
-
-                #print(s)
-                sys.stdout.write(x)
-
-        # Start an interactive shell session on the SSH server
-        chan = client.invoke_shell()
+        _, o, e = client.exec_command("ls -l; sleep 2; echo done")
 
         # go func
-        (lambda ch: handler(ch))(chan)
+        # (lambda s: self.handler(s))(o)
+        # (lambda s: self.handler(s))(e)
+        h = self.handler(o)
 
-        chan.send("ls; sleep 3")
-        chan.send("ls")
+        print("* returning ls2")
 
+        return h
+
+    def uptime(self):
+        # loop = asyncio.get_event_loop()
+        _, o, e = self.client.exec_command('uptime; sleep 2; echo done')
+        # return loop.run_in_executor(None, self.handler, o)
+
+        print("sent")
+
+        return self.handler(o)
 
 
     def close(self):
@@ -77,13 +58,29 @@ class ClientManager():
         client.close()
 
 
-def main():
+async def _main():
     cm = ClientManager()
     try:
-        cm.ls()
-        cm.ls()
-    finally:
-        cm.close()
+        # いやいや、順に実行してほしいよ
+        # queueing?
+        # sequenceかくか
+        futures = [
+            cm.uptime(),
+            cm.uptime(),
+        ]
 
+        print(futures)
+
+        return asyncio.gather(*futures)
+
+    finally:
+        #cm.close()
+        pass
+
+def main():
+    loop = asyncio.get_event_loop()
+    # Blocking call which returns when the hello_world() coroutine is done
+    loop.run_until_complete(_main())
+    loop.close()
 
 main()
