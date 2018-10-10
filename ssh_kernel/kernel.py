@@ -1,9 +1,5 @@
 from ipykernel.kernelbase import Kernel
 import paramiko
-from pexpect import EOF
-from pexpect import pxssh
-from pexpect import replwrap
-import pexpect
 
 from subprocess import check_output
 import os.path
