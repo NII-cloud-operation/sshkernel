@@ -62,11 +62,11 @@ class SSHKernel(Kernel):
             print("SSH session failed on login.")
             raise str(s)
 
-    def _process_output(self, buf):
+    def process_output(self, buf):
         for l in buf:
-            self.process_output(l)
+            self.process_line(l)
 
-    def process_output(self, output):
+    def process_line(self, output):
         if not self.silent:
             # image_filenames, output = extract_image_filenames(output)
 
