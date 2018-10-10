@@ -54,14 +54,6 @@ class SSHKernel(Kernel):
         client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
         self._client = client
 
-    def _start_ssh(self):
-        s = pxssh.pxssh(echo=False)
-        if s.login('localhost', 'temp', 'temp'):
-            self._pxssh = s
-        else:
-            print("SSH session failed on login.")
-            raise str(s)
-
     def process_output(self, buf):
         for l in buf:
             self.process_line(l)
@@ -92,7 +84,7 @@ class SSHKernel(Kernel):
             self.process_output(output)
         except EOF:
             output = 'Restarting SSH session'
-            self._start_ssh()
+            self._connect()
             self.process_output(output)
 
         if interrupted:
