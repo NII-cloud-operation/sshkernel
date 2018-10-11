@@ -125,6 +125,7 @@ class SSHKernel(Kernel):
         start = cursor_pos - len(token)
 
         if token[0] == '$':
+            # fixme
             # complete variables
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
             output = self.bashwrapper.run_command(cmd).rstrip()
@@ -134,7 +135,8 @@ class SSHKernel(Kernel):
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
-            output = self.bashwrapper.run_command(cmd).rstrip()
+            _, o, _ = self._client.exec_command(cmd)
+            output = o.read().decode('utf-8').rstrip()
             matches.extend(output.split())
 
         if not matches:
