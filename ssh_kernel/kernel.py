@@ -1,11 +1,9 @@
-from ipykernel.kernelbase import Kernel
-import paramiko
-
 from subprocess import check_output
-import os.path
-
 import re
-import signal
+
+from ipykernel.kernelbase import Kernel
+from paramiko.ssh_exception import SSHException
+import paramiko
 
 __version__ = '0.1.0'
 
