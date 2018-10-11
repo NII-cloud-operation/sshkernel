@@ -50,17 +50,12 @@ class SSHKernel(Kernel):
         client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
         self._client = client
 
-    def process_output(self, buf):
-        for l in buf:
-            self.process_line(l)
-
-    def process_line(self, output):
+    def process_output(self, stream):
         if not self.silent:
             # image_filenames, output = extract_image_filenames(output)
-
-            # Send standard output
-            stream_content = {'name': 'stdout', 'text': output}
-            self.send_response(self.iopub_socket, 'stream', stream_content)
+            for line in stream:
+                stream_content = {'name': 'stdout', 'text': line}
+                self.send_response(self.iopub_socket, 'stream', stream_content)
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
