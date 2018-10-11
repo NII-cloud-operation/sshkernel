@@ -89,9 +89,6 @@ class SSHKernel(Kernel):
             exitcode = 1
             traceback = str(e)
 
-        # fixme: Print aside tornado log
-        self.log.debug("exitcode = {}".format(exitcode))
-
         if exitcode:
             error_content = {
                 'execution_count': self.execution_count,
