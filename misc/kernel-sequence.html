@@ -1,5 +1,6 @@
-# kernelの入出力整理
-
+<body>
+<p>kernelの入出力整理</p>
+<div class="mermaid">
 sequenceDiagram
 participant user as User
 participant c2 as Cell2
@@ -13,20 +14,20 @@ user ->>+c1 : [▶] (1)
 c1 ->> proxy : `ls`
 proxy ->> kernel : `ls`
 
-kernel -->>+ chan : create
+kernel ->>+ chan : create
 
 kernel -->> proxy : executing
 proxy -->> c1 : executing
 
-chan -->> target : `ls`
+chan ->> target : `ls`
 target -->> chan : ret
 chan -->> kernel : ret
 kernel -->> c1 : ret
 target -->> chan : err
 chan -->> kernel : err
 kernel -->> c1 : err
-target -->> chan : done
-chan -->>- kernel : done
+target ->> chan : done
+chan ->>- kernel : done
 kernel -->> c1 : done
 
 user -->>+c2 : ho (2)
@@ -55,4 +56,15 @@ kernel ->> proxy : ret
 user ->> proxy : change host (5)
 
 kernel -->>- target : close
+</div>
 
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    theme: 'neutral',
+    sequence:{
+      useMaxWidth: false,
+    }
+  });
+</script>
+</body>
