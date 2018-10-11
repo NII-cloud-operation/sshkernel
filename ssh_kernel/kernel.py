@@ -80,13 +80,19 @@ class SSHKernel(Kernel):
             return {'status': 'abort', 'execution_count': self.execution_count}
 
         try:
-            exitcode = int(self._pxssh.sendline('echo $?').rstrip())
-        except Exception:
+            _, o, _ = self._client.exec_command('echo $?')
+            exitcode = int(o.read().rstrip())
+        except Exception as e:
             exitcode = 1
+            traceback = str(e)
 
         if exitcode:
-            error_content = {'execution_count': self.execution_count,
-                             'ename': '', 'evalue': str(exitcode), 'traceback': []}
+            error_content = {
+                'execution_count': self.execution_count,
+                'ename': '',
+                'evalue': str(exitcode),
+                'traceback': [traceback],
+            }
 
             self.send_response(self.iopub_socket, 'error', error_content)
             error_content['status'] = 'error'
