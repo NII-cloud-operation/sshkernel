@@ -69,11 +69,11 @@ class SSHKernel(Kernel):
             _, o, e = self._client.exec_command(code)
             self.process_output(o)
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:  # fixme
             interrupted = True
-            output = self._pxssh.before.decode('utf-8')
-            self.process_output(output)
-        except EOF:
+            # output = self._pxssh.before.decode('utf-8')
+            # self.process_output(output)
+        except EOF:  # fixme
             output = 'Restarting SSH session'
             self._connect()
             self.process_output(output)
