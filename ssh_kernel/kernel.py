@@ -67,16 +67,22 @@ class SSHKernel(Kernel):
             _, o, e = self._client.exec_command(code)
             self.process_output(o)
 
-        except KeyboardInterrupt:  # fixme
+        except KeyboardInterrupt:
+            # fixme: sendintr
+            # Use paramiko.Channel directly instead of paramiko.Client
+
             interrupted = True
-            # output = self._pxssh.before.decode('utf-8')
-            # self.process_output(output)
-        except EOF:  # fixme
-            output = 'Restarting SSH session'
+            self.process_output('* interrupt')
+
+        except SSHException:  # fixme: undefined
+            output = 'Reconnect SSH...'
             self._connect()
             self.process_output(output)
 
         if interrupted:
+            # fixme: Print aside tornado log
+            print("interrupted = True")
+
             return {'status': 'abort', 'execution_count': self.execution_count}
 
         try:
@@ -85,6 +91,9 @@ class SSHKernel(Kernel):
         except Exception as e:
             exitcode = 1
             traceback = str(e)
+
+        # fixme: Print aside tornado log
+        self.log.debug("exitcode = {}".format(exitcode))
 
         if exitcode:
             error_content = {
