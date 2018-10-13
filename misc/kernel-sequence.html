@@ -1,0 +1,70 @@
+<body>
+<p>kernelの入出力整理</p>
+<div class="mermaid">
+sequenceDiagram
+participant user as User
+participant c2 as Cell2
+participant c1 as Cell1
+participant proxy as KernelProxy
+participant kernel as Kernel
+participant chan
+
+kernel -->>+ target : connect
+user ->>+c1 : [▶] (1)
+c1 ->> proxy : `ls`
+proxy ->> kernel : `ls`
+
+kernel ->>+ chan : create
+
+kernel -->> proxy : executing
+proxy -->> c1 : executing
+
+chan ->> target : `ls`
+target -->> chan : ret
+chan -->> kernel : ret
+kernel -->> c1 : ret
+target -->> chan : err
+chan -->> kernel : err
+kernel -->> c1 : err
+target ->> chan : done
+chan ->>- kernel : done
+kernel -->> c1 : done
+
+user -->>+c2 : ho (2)
+c2 -->> proxy : ho
+proxy -->> kernel : ho
+
+
+user ->> c1 : [■] (3)
+c1 ->> proxy : stop
+proxy ->> kernel : stop
+kernel ->> chan : close 
+
+c1 -->> -user: done
+
+kernel -->> target : ho
+target -->> kernel : done
+kernel -->> proxy : done
+proxy -->>c2 : done
+c2 -->>- user : done
+c1 -->> proxy : ya
+
+user ->> proxy : tab (4)
+proxy ->> kernel : `completion`
+kernel ->> proxy : ret
+
+user ->> proxy : change host (5)
+
+kernel -->>- target : close
+</div>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    theme: 'neutral',
+    sequence:{
+      useMaxWidth: false,
+    }
+  });
+</script>
+</body>

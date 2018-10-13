@@ -1,60 +1,14 @@
-from ipykernel.kernelbase import Kernel
-from pexpect import EOF
-from pexpect import pxssh
-from pexpect import replwrap
-import pexpect
-
 from subprocess import check_output
-import os.path
-
 import re
-import signal
+
+from ipykernel.kernelbase import Kernel
+from paramiko.ssh_exception import SSHException
+import paramiko
 
 __version__ = '0.1.0'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
-from .images import (
-    extract_image_filenames, display_data_for_image, image_setup_cmd
-)
-
-class IREPLWrapper(replwrap.REPLWrapper):
-    """A subclass of REPLWrapper that gives incremental output
-    specifically for bash_kernel.
-
-    The parameters are the same as for REPLWrapper, except for one
-    extra parameter:
-
-    :param line_output_callback: a callback method to receive each batch
-      of incremental output. It takes one string parameter.
-    """
-    def __init__(self, cmd_or_spawn, orig_prompt, prompt_change,
-                 extra_init_cmd=None, line_output_callback=None):
-        self.line_output_callback = line_output_callback
-        replwrap.REPLWrapper.__init__(self, cmd_or_spawn, orig_prompt,
-                                      prompt_change, extra_init_cmd=extra_init_cmd)
-
-    def _expect_prompt(self, timeout=-1):
-        if timeout == None:
-            # "None" means we are executing code from a Jupyter cell by way of the run_command
-            # in the do_execute() code below, so do incremental output.
-            while True:
-                pos = self.child.expect_exact([self.prompt, self.continuation_prompt, u'\r\n'],
-                                              timeout=None)
-                if pos == 2:
-                    # End of line received
-                    self.line_output_callback(self.child.before + '\n')
-                else:
-                    if len(self.child.before) != 0:
-                        # prompt received, but partial line precedes it
-                        self.line_output_callback(self.child.before)
-                    break
-        else:
-            # Otherwise, use existing non-incremental code
-            pos = replwrap.REPLWrapper._expect_prompt(self, timeout=timeout)
-
-        # Prompt received, so return normally
-        return pos
 
 class SSHKernel(Kernel):
     implementation = 'ssh_kernel'
@@ -80,33 +34,23 @@ class SSHKernel(Kernel):
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._start_ssh()
 
-    def _start_ssh(self):
-        s = pxssh.pxssh(echo=False)
-        if s.login('localhost', 'temp', 'temp'):
-            self._pxssh = s
-        else:
-            print("SSH session failed on login.")
-            raise str(s)
+        opts = dict(user='temp', password='temp')
+        self._connect(**opts)
 
-    def process_output(self, output):
+    def _connect(self, **opts):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+        client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
+        self._client = client
+
+    def process_output(self, stream):
         if not self.silent:
-            image_filenames, output = extract_image_filenames(output)
-
-            # Send standard output
-            stream_content = {'name': 'stdout', 'text': output}
-            self.send_response(self.iopub_socket, 'stream', stream_content)
-
-            # Send images, if any
-            for filename in image_filenames:
-                try:
-                    data = display_data_for_image(filename)
-                except ValueError as e:
-                    message = {'name': 'stdout', 'text': str(e)}
-                    self.send_response(self.iopub_socket, 'stream', message)
-                else:
-                    self.send_response(self.iopub_socket, 'display_data', data)
+            # image_filenames, output = extract_image_filenames(output)
+            for line in stream:
+                stream_content = {'name': 'stdout', 'text': line}
+                self.send_response(self.iopub_socket, 'stream', stream_content)
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -117,34 +61,41 @@ class SSHKernel(Kernel):
 
         interrupted = False
         try:
-            s = self._pxssh
-            s.sendline(code)
-            s.prompt()  # wait
-            output = s.before.decode('utf-8')
-            self.process_output(output)
+            _, o, e = self._client.exec_command(code)
+            self.process_output(o)
 
         except KeyboardInterrupt:
-            self._pxssh.sendintr()
+            # fixme: sendintr
+            # Use paramiko.Channel directly instead of paramiko.Client
+
             interrupted = True
-            self._pxssh._expect_prompt()
-            output = self._pxssh.before.decode('utf-8')
-            self.process_output(output)
-        except EOF:
-            output = 'Restarting SSH session'
-            self._start_ssh()
+            self.process_output('* interrupt')
+
+        except SSHException:  # fixme: undefined
+            output = 'Reconnect SSH...'
+            self._connect()
             self.process_output(output)
 
         if interrupted:
+            # fixme: Print aside tornado log
+            print("interrupted = True")
+
             return {'status': 'abort', 'execution_count': self.execution_count}
 
         try:
-            exitcode = int(self._pxssh.sendline('echo $?').rstrip())
-        except Exception:
+            _, o, _ = self._client.exec_command('echo $?')
+            exitcode = int(o.read().rstrip())
+        except Exception as e:
             exitcode = 1
+            traceback = str(e)
 
         if exitcode:
-            error_content = {'execution_count': self.execution_count,
-                             'ename': '', 'evalue': str(exitcode), 'traceback': []}
+            error_content = {
+                'execution_count': self.execution_count,
+                'ename': '',
+                'evalue': str(exitcode),
+                'traceback': [traceback],
+            }
 
             self.send_response(self.iopub_socket, 'error', error_content)
             error_content['status'] = 'error'
@@ -171,6 +122,7 @@ class SSHKernel(Kernel):
         start = cursor_pos - len(token)
 
         if token[0] == '$':
+            # fixme
             # complete variables
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
             output = self.bashwrapper.run_command(cmd).rstrip()
@@ -180,7 +132,8 @@ class SSHKernel(Kernel):
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
-            output = self.bashwrapper.run_command(cmd).rstrip()
+            _, o, _ = self._client.exec_command(cmd)
+            output = o.read().decode('utf-8').rstrip()
             matches.extend(output.split())
 
         if not matches:
