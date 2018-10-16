@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+import io
 from subprocess import check_output
 import re
 
@@ -10,7 +12,51 @@ __version__ = '0.1.0'
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
 
+class SSHWrapper(ABC):
+    @abstractmethod
+    def exec_command(self, cmd):
+        '''
+        Returns:
+            string: Command output
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def exit_code(self):
+        '''
+        Returns:
+            int: Previous comamand exit code
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def connect(self):
+        '''
+        Connect to host, login
+
+        Raises:
+            SSHConnectionError
+        '''
+        raise NotImplementedError
+
+    @abstractmethod
+    def close(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def interrupt(self):
+        '''
+        Send SIGINT to remote
+        '''
+        raise NotImplementedError
+
+
 class SSHKernel(Kernel):
+    '''
+    SSH kernel run commands remotely
+
+    Forked from bash_kernel
+    '''
     implementation = 'ssh_kernel'
     implementation_version = __version__
 
