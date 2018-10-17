@@ -51,6 +51,36 @@ class SSHWrapper(ABC):
         raise NotImplementedError
 
 
+class SSHWrapperParamiko(SSHWrapper):
+    def __init__(self):
+        self._client = None
+
+    def exec_command(self, cmd):
+        _, o, _ = self._client.exec_command(cmd)
+
+        return io.TextIOWrapper(o, encoding='utf-8')
+
+    def exit_code(self):
+        o = self.exec_command('echo $?')
+        return int(o.read().rstrip())
+
+    def connect(self, **opts):
+        # fixme
+        opts = dict(user='temp', password='temp')
+
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+        client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
+        self._client = client
+
+    def close(self):
+        self._client.close()
+
+    def interrupt(self):
+        pass
+
+
 class SSHKernel(Kernel):
     '''
     SSH kernel run commands remotely
@@ -70,7 +100,7 @@ class SSHKernel(Kernel):
     @property
     def banner(self):
         if self._banner is None:
-            self._banner = check_output(['ssh', '-V']).decode('utf-8')
+            self._banner = 'SSH kernel version {}'.format(__version__)
         return self._banner
 
     language_info = {'name': 'ssh',
@@ -81,15 +111,8 @@ class SSHKernel(Kernel):
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
 
-        opts = dict(user='temp', password='temp')
-        self._connect(**opts)
-
-    def _connect(self, **opts):
-        client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.set_missing_host_key_policy(paramiko.WarningPolicy())
-        client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
-        self._client = client
+        self.sshwrapper = SSHWrapperParamiko()
+        self.sshwrapper.connect()
 
     def process_output(self, stream):
         if not self.silent:
@@ -107,7 +130,7 @@ class SSHKernel(Kernel):
 
         interrupted = False
         try:
-            _, o, e = self._client.exec_command(code)
+            o = self.sshwrapper.exec_command(code)
             self.process_output(o)
 
         except KeyboardInterrupt:
@@ -119,7 +142,7 @@ class SSHKernel(Kernel):
 
         except SSHException:  # fixme: undefined
             output = 'Reconnect SSH...'
-            self._connect()
+            self.sshwrapper.connect()
             self.process_output(output)
 
         if interrupted:
@@ -129,8 +152,8 @@ class SSHKernel(Kernel):
             return {'status': 'abort', 'execution_count': self.execution_count}
 
         try:
-            _, o, _ = self._client.exec_command('echo $?')
-            exitcode = int(o.read().rstrip())
+            o = self.sshwrapper.exec_command('echo $?')
+            exitcode = self.sshwrapper.exit_code() 
         except Exception as e:
             exitcode = 1
             traceback = str(e)
@@ -171,15 +194,15 @@ class SSHKernel(Kernel):
             # fixme
             # complete variables
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
-            output = self.bashwrapper.run_command(cmd).rstrip()
+            output = self.sshwrapper.exec_command(cmd).read().rstrip()
             completions = set(output.split())
             # append matches including leading $
             matches.extend(['$'+c for c in completions])
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
-            _, o, _ = self._client.exec_command(cmd)
-            output = o.read().decode('utf-8').rstrip()
+            o = self.sshwrapper.exec_command(cmd)
+            output = o.read().rstrip()
             matches.extend(output.split())
 
         if not matches:
