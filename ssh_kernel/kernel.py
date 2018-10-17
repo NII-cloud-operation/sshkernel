@@ -70,7 +70,7 @@ class SSHKernel(Kernel):
     @property
     def banner(self):
         if self._banner is None:
-            self._banner = check_output(['ssh', '-V']).decode('utf-8')
+            self._banner = 'SSH kernel version {}'.format(__version__)
         return self._banner
 
     language_info = {'name': 'ssh',
