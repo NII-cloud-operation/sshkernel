@@ -51,6 +51,19 @@ class SSHWrapper(ABC):
         raise NotImplementedError
 
 
+class SSHWrapperParamiko(SSHWrapper):
+    def exec_command(self, cmd):
+        pass
+    def exit_code(self):
+        pass
+    def connect(self):
+        pass
+    def close(self):
+        pass
+    def interrupt(self):
+        pass
+
+
 class SSHKernel(Kernel):
     '''
     SSH kernel run commands remotely
