@@ -64,8 +64,8 @@ class SSHWrapperParamiko(SSHWrapper):
         return io.TextIOWrapper(o, encoding='utf-8')
 
     def exit_code(self):
-        o = self.exec_command('echo $?')
-        return int(o.read().rstrip())
+        # Not implemented yet
+        return 0
 
     def connect(self, **opts):
         # fixme
