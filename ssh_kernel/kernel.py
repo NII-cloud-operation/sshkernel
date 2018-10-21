@@ -99,11 +99,20 @@ class SSHWrapperParamiko(SSHWrapper):
         #
         # http://docs.paramiko.org/en/2.4/api/client.html
 
-        if 'user' in lookup:
-            lookup['username'] = lookup.pop('user')
+        if 'hostname' in lookup:
+            hostname = lookup.pop('hostname')
+        else:
+            hostname = host
         if 'identityfile' in lookup:
             lookup['key_filename'] = lookup.pop('identityfile')
-        client.connect(**lookup, timeout=1)
+        if 'port' in lookup:
+            lookup['port'] = int(lookup.pop('port'))
+        if 'user' in lookup:
+            lookup['username'] = lookup.pop('user')
+
+        print(lookup)
+
+        client.connect(hostname, **lookup)
 
         self._client = client
 
