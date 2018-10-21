@@ -53,10 +53,19 @@ class SSHWrapper(ABC):
         '''
         raise NotImplementedError
 
+    @abstractmethod
+    def login(self, host):
+        pass
+
 
 class SSHWrapperParamiko(SSHWrapper):
     def __init__(self):
         self._client = None
+        self._host = None
+
+    @property
+    def host(self):
+        return self._host
 
     def exec_command(self, cmd):
         # todo: Merge stderr into stdout, or append '2>&1'
@@ -71,11 +80,12 @@ class SSHWrapperParamiko(SSHWrapper):
     def connect(self, **opts):
         # fixme: Login from frontend
         opts = dict(user='temp', password='temp')
+        host = self.host
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
-        client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
+        client.connect(host, username=opts["user"], password=opts["password"], timeout=1)
         self._client = client
 
     def close(self):
@@ -83,6 +93,13 @@ class SSHWrapperParamiko(SSHWrapper):
 
     def interrupt(self):
         pass
+
+    def login(self, host):
+        if self._client:
+            self.close()
+
+        self._host = host
+        self.connect()
 
 
 class SSHKernel(MetaKernel):
