@@ -125,9 +125,9 @@ class SSHKernel(MetaKernel):
                 stream_content = {'name': 'stdout', 'text': line}
                 self.send_response(self.iopub_socket, 'stream', stream_content)
 
-    def do_execute(self, code, silent, store_history=True,
-                   user_expressions=None, allow_stdin=False):
-        self.silent = silent
+    # do_execute_direct for metakernel.MetaKernel subclass
+    def do_execute_direct(self, code):
+#        self.silent = silent
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,
                     'payload': [], 'user_expressions': {}}
@@ -162,19 +162,26 @@ class SSHKernel(MetaKernel):
             traceback = str(e)
 
         if exitcode:
-            error_content = {
-                'execution_count': self.execution_count,
-                'ename': '',
-                'evalue': str(exitcode),
-                'traceback': [traceback],
-            }
+            ename = ''
+            evalue = str(exitcode)
+            if not traceback:
+                traceback = ''
 
-            self.send_response(self.iopub_socket, 'error', error_content)
-            error_content['status'] = 'error'
-            return error_content
+            return ExceptionWrapper(ename, evalue, traceback)
+#            error_content = {
+##                'execution_count': self.execution_count,
+#                'ename': ename,
+#                'evalue': str(exitcode),
+#                'traceback': traceback,
+#            }
+
+#            self.send_response(self.iopub_socket, 'error', error_content)
+#            error_content['status'] = 'error'
+#            return error_content
         else:
-            return {'status': 'ok', 'execution_count': self.execution_count,
-                    'payload': [], 'user_expressions': {}}
+            return None  # metakernel regards None as normal exit
+#            return {'status': 'ok', 'execution_count': self.execution_count,
+#                    'payload': [], 'user_expressions': {}}
 
     def do_complete(self, code, cursor_pos):
         code = code[:cursor_pos]
