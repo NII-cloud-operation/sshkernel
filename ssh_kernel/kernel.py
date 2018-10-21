@@ -160,26 +160,22 @@ class SSHKernel(MetaKernel):
         self.silent = False
 
         self.sshwrapper = SSHWrapperParamiko()
-        # self.sshwrapper.connect()
 
     def reload_magics(self):
-        # fixme: Avoid depend on super's private method reload_magics()
+        # todo: Avoid depend on private method
         super().reload_magics()
         register_magics(self)
 
     def process_output(self, stream):
         if not self.silent:
-            # image_filenames, output = extract_image_filenames(output)
             for line in stream:
                 stream_content = {'name': 'stdout', 'text': line}
                 self.send_response(self.iopub_socket, 'stream', stream_content)
 
-    # do_execute_direct for metakernel.MetaKernel subclass
+    # Implement MetaKernel subclass
     def do_execute_direct(self, code):
-#        self.silent = silent
         if not code.strip():
-            return {'status': 'ok', 'execution_count': self.execution_count,
-                    'payload': [], 'user_expressions': {}}
+            return None
 
         interrupted = False
         try:
@@ -216,8 +212,6 @@ class SSHKernel(MetaKernel):
                 traceback = ''
 
             return ExceptionWrapper(ename, evalue, traceback)
-        else:
-            return None  # metakernel regards None as normal exit
 
     def do_complete(self, code, cursor_pos):
         code = code[:cursor_pos]
