@@ -187,13 +187,13 @@ class SSHKernel(MetaKernel):
             # Use paramiko.Channel directly instead of paramiko.Client
 
             interrupted = True
-            self.process_output('* interrupt')
+            self.Error('* interrupt')
 
         except SSHException:
             # todo: Implement reconnect sequence
             output = 'Reconnect SSH...'
             self.sshwrapper.connect()
-            self.process_output(output)
+            self.Error(output)
 
         if interrupted:
             # todo: Return more information
