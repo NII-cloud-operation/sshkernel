@@ -7,6 +7,9 @@ from ipykernel.kernelbase import Kernel
 from paramiko.ssh_exception import SSHException
 import paramiko
 
+from metakernel import ExceptionWrapper
+from metakernel import MetaKernel
+
 __version__ = '0.1.0'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
@@ -81,7 +84,7 @@ class SSHWrapperParamiko(SSHWrapper):
         pass
 
 
-class SSHKernel(Kernel):
+class SSHKernel(MetaKernel):
     '''
     SSH kernel run commands remotely
 
@@ -109,7 +112,8 @@ class SSHKernel(Kernel):
                      'file_extension': '.sh'}
 
     def __init__(self, **kwargs):
-        Kernel.__init__(self, **kwargs)
+        super().__init__(**kwargs)
+        self.silent = False
 
         self.sshwrapper = SSHWrapperParamiko()
         self.sshwrapper.connect()
