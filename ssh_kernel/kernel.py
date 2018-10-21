@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import io
 from subprocess import check_output
+import os
 import re
 
 from ipykernel.kernelbase import Kernel
@@ -70,6 +71,8 @@ class SSHWrapperParamiko(SSHWrapper):
         return self._host
 
     def exec_command(self, cmd):
+        # fixme: raise unless host is set
+
         # todo: Merge stderr into stdout, or append '2>&1'
         _, o, _ = self._client.exec_command(cmd)
 
@@ -79,15 +82,29 @@ class SSHWrapperParamiko(SSHWrapper):
         # Not implemented yet
         return 0
 
-    def connect(self, **opts):
-        # fixme: Login from frontend
-        opts = dict(user='temp', password='temp')
+    def connect(self):
         host = self.host
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
-        client.connect(host, username=opts["user"], password=opts["password"], timeout=1)
+
+        config = self._init_ssh_config('~/.ssh/config')
+        lookup = config.lookup(host)
+
+        # Authentication is attempted in the following order of priority:
+        # * The pkey or key_filename passed in (if any)
+        # * Any key we can find through an SSH agent
+        # * Any “id_rsa”, “id_dsa” or “id_ecdsa” key discoverable in ~/.ssh/
+        #
+        # http://docs.paramiko.org/en/2.4/api/client.html
+
+        if 'user' in lookup:
+            lookup['username'] = lookup.pop('user')
+        if 'identityfile' in lookup:
+            lookup['key_filename'] = lookup.pop('identityfile')
+        client.connect(**lookup, timeout=1)
+
         self._client = client
 
     def close(self):
@@ -102,6 +119,13 @@ class SSHWrapperParamiko(SSHWrapper):
 
         self._host = host
         self.connect()
+
+    def _init_ssh_config(self, filename):
+        conf = paramiko.config.SSHConfig()
+        with open(os.path.expanduser(filename)) as ssh_config:
+            conf.parse(ssh_config)
+
+        return conf
 
 
 class SSHKernel(MetaKernel):
