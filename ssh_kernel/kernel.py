@@ -156,8 +156,7 @@ class SSHKernel(MetaKernel):
             return {'status': 'abort', 'execution_count': self.execution_count}
 
         try:
-            o = self.sshwrapper.exec_command('echo $?')
-            exitcode = self.sshwrapper.exit_code() 
+            exitcode = self.sshwrapper.exit_code()
         except Exception as e:
             exitcode = 1
             traceback = str(e)
