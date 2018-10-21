@@ -168,20 +168,8 @@ class SSHKernel(MetaKernel):
                 traceback = ''
 
             return ExceptionWrapper(ename, evalue, traceback)
-#            error_content = {
-##                'execution_count': self.execution_count,
-#                'ename': ename,
-#                'evalue': str(exitcode),
-#                'traceback': traceback,
-#            }
-
-#            self.send_response(self.iopub_socket, 'error', error_content)
-#            error_content['status'] = 'error'
-#            return error_content
         else:
             return None  # metakernel regards None as normal exit
-#            return {'status': 'ok', 'execution_count': self.execution_count,
-#                    'payload': [], 'user_expressions': {}}
 
     def do_complete(self, code, cursor_pos):
         code = code[:cursor_pos]
