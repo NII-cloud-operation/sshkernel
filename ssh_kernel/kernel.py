@@ -136,7 +136,7 @@ class SSHKernel(MetaKernel):
         self.silent = False
 
         self.sshwrapper = SSHWrapperParamiko()
-        self.sshwrapper.connect()
+        # self.sshwrapper.connect()
 
     def reload_magics(self):
         # fixme: Avoid depend on super's private method reload_magics()
