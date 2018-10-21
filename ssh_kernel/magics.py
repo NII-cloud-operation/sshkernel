@@ -14,8 +14,16 @@ class LoginMagic(Magic):
             %login localhost
         """
 
-        print("** login **")
-        self.kernel.Login(host)
+        self.kernel.Print('[ssh] Login to {}...'.format(host))
+        try:
+            msg, err = self.kernel.Login(host)
+            if err:
+                self.kernel.Error("[ssh] Login failed: {}".format(msg))
+                return
+        except Exception as e:
+            self.kernel.Error(str(e))
+
+        self.kernel.Print('[ssh] {}'.format(msg))
 
 
 def register_magics(kernel):

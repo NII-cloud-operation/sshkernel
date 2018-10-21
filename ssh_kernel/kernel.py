@@ -10,6 +10,8 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
+from .magics import register_magics
+
 __version__ = '0.1.0'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
@@ -136,6 +138,11 @@ class SSHKernel(MetaKernel):
         self.sshwrapper = SSHWrapperParamiko()
         self.sshwrapper.connect()
 
+    def reload_magics(self):
+        # fixme: Avoid depend on super's private method reload_magics()
+        super().reload_magics()
+        register_magics(self)
+
     def process_output(self, stream):
         if not self.silent:
             # image_filenames, output = extract_image_filenames(output)
@@ -226,3 +233,19 @@ class SSHKernel(MetaKernel):
         return {'matches': sorted(matches), 'cursor_start': start,
                 'cursor_end': cursor_pos, 'metadata': dict(),
                 'status': 'ok'}
+
+    def Login(self, host):
+        """
+        %login magic handler.
+
+        Returns:
+            string: Message
+            bool: Falsy if succeeded
+        """
+
+        self.sshwrapper.login(host)
+
+        msg = 'Successfully logged in.'
+        err = None
+
+        return (msg, err)
