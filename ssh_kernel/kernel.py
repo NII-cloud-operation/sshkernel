@@ -153,7 +153,7 @@ class SSHKernel(MetaKernel):
 
         if interrupted:
             # todo: Return more information
-            return ExceptionWrapper('abort', 1, [str(KeyboardInterrupt)])
+            return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         try:
             exitcode = self.sshwrapper.exit_code()
