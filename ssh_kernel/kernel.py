@@ -59,6 +59,7 @@ class SSHWrapperParamiko(SSHWrapper):
         self._client = None
 
     def exec_command(self, cmd):
+        # todo: Merge stderr into stdout, or append '2>&1'
         _, o, _ = self._client.exec_command(cmd)
 
         return io.TextIOWrapper(o, encoding='utf-8')
@@ -68,7 +69,7 @@ class SSHWrapperParamiko(SSHWrapper):
         return 0
 
     def connect(self, **opts):
-        # fixme
+        # fixme: Login from frontend
         opts = dict(user='temp', password='temp')
 
         client = paramiko.SSHClient()
@@ -138,22 +139,21 @@ class SSHKernel(MetaKernel):
             self.process_output(o)
 
         except KeyboardInterrupt:
-            # fixme: sendintr
+            # todo: sendintr
             # Use paramiko.Channel directly instead of paramiko.Client
 
             interrupted = True
             self.process_output('* interrupt')
 
-        except SSHException:  # fixme: undefined
+        except SSHException:
+            # todo: Implement reconnect sequence
             output = 'Reconnect SSH...'
             self.sshwrapper.connect()
             self.process_output(output)
 
         if interrupted:
-            # fixme: Print aside tornado log
-            print("interrupted = True")
-
-            return {'status': 'abort', 'execution_count': self.execution_count}
+            # todo: Return more information
+            return ExceptionWrapper('abort', 1, [str(KeyboardInterrupt)])
 
         try:
             exitcode = self.sshwrapper.exit_code()
@@ -201,7 +201,6 @@ class SSHKernel(MetaKernel):
         start = cursor_pos - len(token)
 
         if token[0] == '$':
-            # fixme
             # complete variables
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
             output = self.sshwrapper.exec_command(cmd).read().rstrip()
