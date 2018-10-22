@@ -83,6 +83,9 @@ class SSHWrapperParamiko(SSHWrapper):
         return 0
 
     def connect(self):
+        if self._client:
+            self.close()
+
         host = self.host
 
         client = paramiko.SSHClient()
@@ -123,9 +126,6 @@ class SSHWrapperParamiko(SSHWrapper):
         pass
 
     def login(self, host):
-        if self._client:
-            self.close()
-
         self._host = host
         self.connect()
 
