@@ -64,8 +64,14 @@ class SSHWrapperParamiko(SSHWrapper):
 
         # FIXME:
         # Wrap paramiko.BufferedFile to return UTF-8 string stream always
-        # Currently, f.read() is bytes stream, and f.readliens() is string.
-        _, o, _ = self._client.exec_command(cmd, get_pty=True)
+        # Currently, f.read() is bytes stream, and f.readlines() is string.
+
+        # `get_pty` make stderr print in stdin
+        # so we can close stderr immediately
+        i, o, e = self._client.exec_command(cmd, get_pty=True)
+
+        i.close()
+        e.close()
 
         return o
 
