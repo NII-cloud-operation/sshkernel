@@ -181,11 +181,9 @@ class SSHKernel(MetaKernel):
                 stream_content = {'name': 'stdout', 'text': line}
                 self.send_response(self.iopub_socket, 'stream', stream_content)
 
-    # Implement MetaKernel subclass
-    def do_execute_direct(self, code):
-        if not code.strip():
-            return None
-
+    ##############################
+    # Implement base class methods
+    def do_execute_direct(self, code, silent=False):
         interrupted = False
         try:
             o = self.sshwrapper.exec_command(code)
