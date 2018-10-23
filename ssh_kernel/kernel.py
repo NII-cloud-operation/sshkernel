@@ -245,6 +245,10 @@ class SSHKernel(MetaKernel):
                 'cursor_end': cursor_pos, 'metadata': dict(),
                 'status': 'ok'}
 
+    def restart_kernel(self):
+        self.Print('[ssh] Restart kernel: Closing connection...')
+        self.sshwrapper.close()
+
     def Login(self, host):
         """
         %login magic handler.
