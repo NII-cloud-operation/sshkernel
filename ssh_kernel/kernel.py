@@ -36,9 +36,9 @@ class SSHWrapper(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def connect(self):
+    def connect(self, host):
         '''
-        Connect to host, login
+        Connect to host
 
         Raises:
             SSHConnectionError
@@ -56,19 +56,11 @@ class SSHWrapper(ABC):
         '''
         raise NotImplementedError
 
-    @abstractmethod
-    def login(self, host):
-        pass
 
 
 class SSHWrapperParamiko(SSHWrapper):
     def __init__(self):
         self._client = None
-        self._host = None
-
-    @property
-    def host(self):
-        return self._host
 
     def exec_command(self, cmd):
         # fixme: raise unless host is set
@@ -82,11 +74,9 @@ class SSHWrapperParamiko(SSHWrapper):
         # Not implemented yet
         return 0
 
-    def connect(self):
+    def connect(self, host):
         if self._client:
             self.close()
-
-        host = self.host
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
@@ -124,10 +114,6 @@ class SSHWrapperParamiko(SSHWrapper):
 
     def interrupt(self):
         pass
-
-    def login(self, host):
-        self._host = host
-        self.connect()
 
     def _init_ssh_config(self, filename):
         conf = paramiko.config.SSHConfig()
@@ -268,7 +254,7 @@ class SSHKernel(MetaKernel):
             bool: Falsy if succeeded
         """
 
-        self.sshwrapper.login(host)
+        self.sshwrapper.connect(host)
 
         msg = 'Successfully logged in.'
         err = None
