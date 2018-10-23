@@ -23,7 +23,7 @@ class SSHWrapper(ABC):
     def exec_command(self, cmd):
         '''
         Returns:
-            string: Command output
+            io.TextIOWrapper: Command output stream
         '''
         raise NotImplementedError
 
@@ -57,18 +57,20 @@ class SSHWrapper(ABC):
         raise NotImplementedError
 
 
-
 class SSHWrapperParamiko(SSHWrapper):
     def __init__(self):
         self._client = None
 
     def exec_command(self, cmd):
-        # fixme: raise unless host is set
+        # fixme: raise unless _client.connect() is not succeeded
 
-        # todo: Merge stderr into stdout, or append '2>&1'
-        _, o, _ = self._client.exec_command(cmd)
+        # FIXME:
+        # Wrap paramiko.BufferedFile to return UTF-8 string stream always
+        # Currently, f.read() is bytes stream, and f.readliens() is string.
+        _, o, _ = self._client.exec_command(cmd, get_pty=True)
 
-        return io.TextIOWrapper(o, encoding='utf-8')
+        return o
+
 
     def exit_code(self):
         # Not implemented yet
@@ -226,17 +228,23 @@ class SSHKernel(MetaKernel):
         if token[0] == '$':
             # complete variables
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
-            output = self.sshwrapper.exec_command(cmd).read().rstrip()
+            o = self.sshwrapper.exec_command(cmd)
+
+            # FIXME: Avoid using .decode() for paramiko.BufferedFile
+            output = o.read().decode('utf-8').rstrip()
+
             completions = set(output.split())
             # append matches including leading $
-            matches.extend(['$'+c for c in completions])
+            matches = ['$'+c for c in completions]
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
             o = self.sshwrapper.exec_command(cmd)
-            output = o.read().rstrip()
-            matches.extend(output.split())
 
+            # FIXME: Avoid using .decode() for paramiko.BufferedFile
+            output = o.read().decode('utf-8').rstrip()
+
+            matches = set(output.split())
         if not matches:
             return default
         matches = [m for m in matches if m.startswith(token)]
