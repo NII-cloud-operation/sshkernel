@@ -1,11 +1,17 @@
 from abc import ABC, abstractmethod
 import io
 from subprocess import check_output
+import os
 import re
 
 from ipykernel.kernelbase import Kernel
 from paramiko.ssh_exception import SSHException
 import paramiko
+
+from metakernel import ExceptionWrapper
+from metakernel import MetaKernel
+
+from .magics import register_magics
 
 __version__ = '0.1.0'
 
@@ -30,9 +36,9 @@ class SSHWrapper(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def connect(self):
+    def connect(self, host):
         '''
-        Connect to host, login
+        Connect to host
 
         Raises:
             SSHConnectionError
@@ -51,27 +57,56 @@ class SSHWrapper(ABC):
         raise NotImplementedError
 
 
+
 class SSHWrapperParamiko(SSHWrapper):
     def __init__(self):
         self._client = None
 
     def exec_command(self, cmd):
+        # fixme: raise unless host is set
+
+        # todo: Merge stderr into stdout, or append '2>&1'
         _, o, _ = self._client.exec_command(cmd)
 
         return io.TextIOWrapper(o, encoding='utf-8')
 
     def exit_code(self):
-        o = self.exec_command('echo $?')
-        return int(o.read().rstrip())
+        # Not implemented yet
+        return 0
 
-    def connect(self, **opts):
-        # fixme
-        opts = dict(user='temp', password='temp')
+    def connect(self, host):
+        if self._client:
+            self.close()
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
-        client.connect('localhost', username=opts["user"], password=opts["password"], timeout=1)
+
+        config = self._init_ssh_config('~/.ssh/config')
+        lookup = config.lookup(host)
+
+        # Authentication is attempted in the following order of priority:
+        # * The pkey or key_filename passed in (if any)
+        # * Any key we can find through an SSH agent
+        # * Any “id_rsa”, “id_dsa” or “id_ecdsa” key discoverable in ~/.ssh/
+        #
+        # http://docs.paramiko.org/en/2.4/api/client.html
+
+        if 'hostname' in lookup:
+            hostname = lookup.pop('hostname')
+        else:
+            hostname = host
+        if 'identityfile' in lookup:
+            lookup['key_filename'] = lookup.pop('identityfile')
+        if 'port' in lookup:
+            lookup['port'] = int(lookup.pop('port'))
+        if 'user' in lookup:
+            lookup['username'] = lookup.pop('user')
+
+        print(lookup)
+
+        client.connect(hostname, **lookup)
+
         self._client = client
 
     def close(self):
@@ -80,8 +115,15 @@ class SSHWrapperParamiko(SSHWrapper):
     def interrupt(self):
         pass
 
+    def _init_ssh_config(self, filename):
+        conf = paramiko.config.SSHConfig()
+        with open(os.path.expanduser(filename)) as ssh_config:
+            conf.parse(ssh_config)
 
-class SSHKernel(Kernel):
+        return conf
+
+
+class SSHKernel(MetaKernel):
     '''
     SSH kernel run commands remotely
 
@@ -109,69 +151,60 @@ class SSHKernel(Kernel):
                      'file_extension': '.sh'}
 
     def __init__(self, **kwargs):
-        Kernel.__init__(self, **kwargs)
+        super().__init__(**kwargs)
+        self.silent = False
 
         self.sshwrapper = SSHWrapperParamiko()
-        self.sshwrapper.connect()
+
+    def reload_magics(self):
+        # todo: Avoid depend on private method
+        super().reload_magics()
+        register_magics(self)
 
     def process_output(self, stream):
         if not self.silent:
-            # image_filenames, output = extract_image_filenames(output)
             for line in stream:
                 stream_content = {'name': 'stdout', 'text': line}
                 self.send_response(self.iopub_socket, 'stream', stream_content)
 
-    def do_execute(self, code, silent, store_history=True,
-                   user_expressions=None, allow_stdin=False):
-        self.silent = silent
-        if not code.strip():
-            return {'status': 'ok', 'execution_count': self.execution_count,
-                    'payload': [], 'user_expressions': {}}
-
+    ##############################
+    # Implement base class methods
+    def do_execute_direct(self, code, silent=False):
         interrupted = False
         try:
             o = self.sshwrapper.exec_command(code)
             self.process_output(o)
 
         except KeyboardInterrupt:
-            # fixme: sendintr
+            # todo: sendintr
             # Use paramiko.Channel directly instead of paramiko.Client
 
             interrupted = True
-            self.process_output('* interrupt')
+            self.Error('* interrupt')
 
-        except SSHException:  # fixme: undefined
+        except SSHException:
+            # todo: Implement reconnect sequence
             output = 'Reconnect SSH...'
             self.sshwrapper.connect()
-            self.process_output(output)
+            self.Error(output)
 
         if interrupted:
-            # fixme: Print aside tornado log
-            print("interrupted = True")
-
-            return {'status': 'abort', 'execution_count': self.execution_count}
+            # todo: Return more information
+            return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         try:
-            o = self.sshwrapper.exec_command('echo $?')
-            exitcode = self.sshwrapper.exit_code() 
+            exitcode = self.sshwrapper.exit_code()
         except Exception as e:
             exitcode = 1
             traceback = str(e)
 
         if exitcode:
-            error_content = {
-                'execution_count': self.execution_count,
-                'ename': '',
-                'evalue': str(exitcode),
-                'traceback': [traceback],
-            }
+            ename = ''
+            evalue = str(exitcode)
+            if not traceback:
+                traceback = ''
 
-            self.send_response(self.iopub_socket, 'error', error_content)
-            error_content['status'] = 'error'
-            return error_content
-        else:
-            return {'status': 'ok', 'execution_count': self.execution_count,
-                    'payload': [], 'user_expressions': {}}
+            return ExceptionWrapper(ename, evalue, traceback)
 
     def do_complete(self, code, cursor_pos):
         code = code[:cursor_pos]
@@ -191,7 +224,6 @@ class SSHKernel(Kernel):
         start = cursor_pos - len(token)
 
         if token[0] == '$':
-            # fixme
             # complete variables
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
             output = self.sshwrapper.exec_command(cmd).read().rstrip()
@@ -212,3 +244,23 @@ class SSHKernel(Kernel):
         return {'matches': sorted(matches), 'cursor_start': start,
                 'cursor_end': cursor_pos, 'metadata': dict(),
                 'status': 'ok'}
+
+    def restart_kernel(self):
+        self.Print('[ssh] Restart kernel: Closing connection...')
+        self.sshwrapper.close()
+
+    def Login(self, host):
+        """
+        %login magic handler.
+
+        Returns:
+            string: Message
+            bool: Falsy if succeeded
+        """
+
+        self.sshwrapper.connect(host)
+
+        msg = 'Successfully logged in.'
+        err = None
+
+        return (msg, err)
