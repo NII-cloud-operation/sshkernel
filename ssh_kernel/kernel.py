@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-import io
-from subprocess import check_output
 import os
 import re
 
@@ -70,7 +68,6 @@ class SSHWrapperParamiko(SSHWrapper):
         _, o, _ = self._client.exec_command(cmd, get_pty=True)
 
         return o
-
 
     def exit_code(self):
         # Not implemented yet
@@ -227,7 +224,9 @@ class SSHKernel(MetaKernel):
 
         if token[0] == '$':
             # complete variables
-            cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
+
+            # strip leading $
+            cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:]
             o = self.sshwrapper.exec_command(cmd)
 
             # FIXME: Avoid using .decode() for paramiko.BufferedFile
