@@ -83,12 +83,8 @@ class SSHWrapperParamiko(SSHWrapper):
         if self._client:
             self.close()
 
-        client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.set_missing_host_key_policy(paramiko.WarningPolicy())
-
-        config = self._init_ssh_config('~/.ssh/config')
-        lookup = config.lookup(host)
+        client = self._new_paramiko_client()
+        hostname, lookup = self._init_ssh_config('~/.ssh/config', host)
 
         # Authentication is attempted in the following order of priority:
         # * The pkey or key_filename passed in (if any)
@@ -97,22 +93,18 @@ class SSHWrapperParamiko(SSHWrapper):
         #
         # http://docs.paramiko.org/en/2.4/api/client.html
 
-        if 'hostname' in lookup:
-            hostname = lookup.pop('hostname')
-        else:
-            hostname = host
-        if 'identityfile' in lookup:
-            lookup['key_filename'] = lookup.pop('identityfile')
-        if 'port' in lookup:
-            lookup['port'] = int(lookup.pop('port'))
-        if 'user' in lookup:
-            lookup['username'] = lookup.pop('user')
-
         print(lookup)
 
         client.connect(hostname, **lookup)
 
         self._client = client
+
+    def _new_paramiko_client(self):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+
+        return client
 
     def close(self):
         self._client.close()
@@ -120,12 +112,26 @@ class SSHWrapperParamiko(SSHWrapper):
     def interrupt(self):
         pass
 
-    def _init_ssh_config(self, filename):
+    def _init_ssh_config(self, filename, host):
         conf = paramiko.config.SSHConfig()
         with open(os.path.expanduser(filename)) as ssh_config:
             conf.parse(ssh_config)
 
-        return conf
+        lookup = conf.lookup(host)
+
+        if 'hostname' in lookup:
+            hostname = lookup.pop('hostname')
+        else:
+            hostname = host
+
+        if 'identityfile' in lookup:
+            lookup['key_filename'] = lookup.pop('identityfile')
+        if 'port' in lookup:
+            lookup['port'] = int(lookup.pop('port'))
+        if 'user' in lookup:
+            lookup['username'] = lookup.pop('user')
+
+        return (hostname, lookup)
 
 
 class SSHKernel(MetaKernel):
