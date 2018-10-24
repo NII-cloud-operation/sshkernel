@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import codecs
 import os
 import re
 
@@ -73,7 +74,9 @@ class SSHWrapperParamiko(SSHWrapper):
         i.close()
         e.close()
 
-        return o
+        text_stream = codecs.getreader("utf-8")(o)
+
+        return text_stream
 
     def exit_code(self):
         # Not implemented yet
