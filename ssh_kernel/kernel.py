@@ -189,19 +189,19 @@ class SSHKernel(MetaKernel):
             self.process_output(o)
 
         except KeyboardInterrupt:
+            interrupted = True
+            self.Error('* interrupt...')
             #
             # FIXME: sendintr
-            interrupted = True
-            self.Error('* interrupt')
+
+            #
+            # TODO: Return more information
+            return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         except SSHException:
             #
             # FIXME: Implement reconnect sequence
             return ExceptionWrapper('ssh_exception', code, [])
-
-        if interrupted:
-            # TODO: Return more information
-            return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         try:
             exitcode = self.sshwrapper.exit_code()
