@@ -224,7 +224,7 @@ class SSHKernel(MetaKernel):
         except SSHException:
             #
             # FIXME: Implement reconnect sequence
-            return ExceptionWrapper('ssh_exception', code, [])
+            return ExceptionWrapper('ssh_exception', str(1), [])
 
         try:
             exitcode = self.sshwrapper.exit_code()
