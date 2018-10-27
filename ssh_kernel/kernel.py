@@ -326,9 +326,3 @@ class SSHKernel(MetaKernel):
         err = None
 
         return (msg, err)
-
-    def Logout(self):
-        '''
-        %logout magic handler
-        '''
-        # FIXME

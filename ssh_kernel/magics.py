@@ -1,7 +1,7 @@
 from metakernel import Magic
 
 
-class LoginMagic(Magic):
+class SSHKernelMagics(Magic):
 
     def line_login(self, host):
         """
@@ -25,6 +25,22 @@ class LoginMagic(Magic):
             # FIXME: Don't handle all exception
             self.kernel.Error(str(e))
 
+    def line_logout(self):
+        '''
+        %logout
+
+        Logout and disconnect.
+
+        Example:
+            %logout
+        '''
+
+        # TODO: Using self.kernel is awkward
+
+        # TODO: Error handling
+        self.kernel.sshwrapper.close()
+        self.kernel.Print('[ssh] Successfully logged out.')
+
 
 def register_magics(kernel):
-    kernel.register_magics(LoginMagic)
+    kernel.register_magics(SSHKernelMagics)
