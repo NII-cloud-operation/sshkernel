@@ -85,6 +85,10 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.Write.assert_not_called()
 
         self.assertIsInstance(err, ExceptionWrapper)
+        self.assertEqual(err.ename, 'abort')
+        self.assertIsInstance(err.evalue, str)
+        self.assertIsInstance(err.traceback, list)
+
         self.instance.Error.assert_called_once()
 
     def test_exec_without_connected_should_return_exception(self):

@@ -230,15 +230,15 @@ class SSHKernel(MetaKernel):
             exitcode = self.sshwrapper.exit_code()
         except Exception as e:
             #
-            # FIXME: Don't catch Exception
+            # TODO: Don't catch Exception
             exitcode = 1
-            traceback = str(e)
+            traceback = [str(e)]
 
         if exitcode:
-            ename = ''
+            ename = 'abnormal exit code'
             evalue = str(exitcode)
             if 'traceback' not in locals():
-                traceback = ''
+                traceback = ['']
 
             return ExceptionWrapper(ename, evalue, traceback)
 
