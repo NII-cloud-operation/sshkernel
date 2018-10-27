@@ -10,6 +10,7 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
+from .exception import SSHKernelNoConnectedException
 from .magics import register_magics
 
 __version__ = '0.1.0'
@@ -55,10 +56,18 @@ class SSHWrapper(ABC):
         '''
         raise NotImplementedError
 
+    @abstractmethod
+    def isconnected(self):
+        '''
+        Connected to server or not
+        '''
+        pass
+
 
 class SSHWrapperParamiko(SSHWrapper):
     def __init__(self):
         self._client = None
+        self._connected = False
 
     def exec_command(self, cmd):
         # fixme: raise unless _client.connect() is not succeeded
@@ -101,6 +110,7 @@ class SSHWrapperParamiko(SSHWrapper):
         client.connect(hostname, **lookup)
 
         self._client = client
+        self._connected = True
 
     def _new_paramiko_client(self):
         client = paramiko.SSHClient()
@@ -110,10 +120,14 @@ class SSHWrapperParamiko(SSHWrapper):
         return client
 
     def close(self):
+        self._connected = False
         self._client.close()
 
     def interrupt(self):
         pass
+
+    def isconnected(self):
+        return self._connected
 
     def _init_ssh_config(self, filename, host):
         conf = paramiko.config.SSHConfig()
@@ -186,6 +200,11 @@ class SSHKernel(MetaKernel):
     ##############################
     # Implement base class methods
     def do_execute_direct(self, code, silent=False):
+        try:
+            self.assert_connected()
+        except SSHKernelNoConnectedException as e:
+            return ExceptionWrapper('abort', 'not connected', [])
+
         interrupted = False
         try:
             o = self.sshwrapper.exec_command(code)
@@ -223,6 +242,19 @@ class SSHKernel(MetaKernel):
             return ExceptionWrapper(ename, evalue, traceback)
 
     def do_complete(self, code, cursor_pos):
+        try:
+            self.assert_connected()
+        except SSHKernelNoConnectedException as e:
+            # TODO: Error() in `do_complete` not shown in notebook
+            self.log.error('not connected')
+
+            content = {
+                'matches': [],
+                'metadata': {},
+                'status': 'ok',
+            }
+            return content
+
         code = code[:cursor_pos]
         default = {'matches': [], 'cursor_start': 0,
                    'cursor_end': cursor_pos, 'metadata': dict(),
@@ -264,6 +296,16 @@ class SSHKernel(MetaKernel):
     def restart_kernel(self):
         self.Print('[ssh] Restart kernel: Closing connection...')
         self.sshwrapper.close()
+
+    def assert_connected(self):
+        '''
+        Check client is connected or raise.
+        '''
+
+        if not self.sshwrapper.isconnected():
+            self.Error('Not connected')
+            raise SSHKernelNoConnectedException
+
 
     def Login(self, host):
         """
