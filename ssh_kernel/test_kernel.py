@@ -103,7 +103,7 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
     @unittest.skip("fixing connect")
     def test_exec_command_returns_stream(self):
-        self.instance.connect('myserver')  # あら、ほんとうにconnectしてしまう
+        self.instance.connect('myserver')
         ret = self.instance.exec_command('yo')
 
         for meth in ['read', 'readline', 'readlines']:
