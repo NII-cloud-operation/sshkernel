@@ -223,7 +223,7 @@ class SSHKernel(MetaKernel):
 
         except SSHException:
             #
-            # FIXME: Implement reconnect sequence
+            # TODO: Implement reconnect sequence
             return ExceptionWrapper('ssh_exception', str(1), [])
 
         try:
