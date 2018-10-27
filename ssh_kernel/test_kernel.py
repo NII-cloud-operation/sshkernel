@@ -82,6 +82,21 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
         self.instance = instance
 
+    def test_connect_should_call_paramiko_connect(self):
+        mock = MagicMock()
+
+        #
+        # connect()中にparamiko.SSHClient()をnewするのでそのコンストラクタを差し替える
+        #
+        _client = paramiko.SSHClient()
+        _client.connect = mock
+        self.instance._new_paramiko_client = lambda: _client  # FIXME: self?
+
+        self.instance.connect("dummy")
+
+        mock.assert_called_once_with("dummy")  # 送信のテスト
+
+
     def test_exec_command_returns_error_at_first(self):
         with self.assertRaises(paramiko.SSHException):
             self.instance.exec_command('yo')
@@ -94,3 +109,27 @@ class SSHWrapperParamikoTest(unittest.TestCase):
         for meth in ['read', 'readline', 'readlines']:
             self.assertIn(meth, dir(ret))
 
+    def test_close_should_delegate(self):
+        mock = MagicMock()
+        self.instance._client.close = mock
+        self.instance.close()
+
+        mock.assert_called_once()
+
+    def test_init_ssh_config(self):
+        import tempfile
+        from textwrap import dedent
+        with tempfile.NamedTemporaryFile('w') as f:
+            f.write(dedent("""
+            Host test
+                HostName 127.0.0.10
+                User testuser
+                IdentityFile ~/.ssh/id_rsa_test
+            """))
+
+            f.seek(0)
+
+            (hostname, lookup) = self.instance._init_ssh_config(f.name, "test")
+
+            self.assertIsInstance(lookup, dict)
+            self.assertEqual(hostname, "127.0.0.10")
