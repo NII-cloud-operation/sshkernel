@@ -1,0 +1,2 @@
+class SSHKernelNoConnectedException(Exception):
+    pass

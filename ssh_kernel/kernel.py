@@ -10,6 +10,7 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
+from .exception import SSHKernelNoConnectedException
 from .magics import register_magics
 
 __version__ = '0.1.0'
@@ -277,6 +278,16 @@ class SSHKernel(MetaKernel):
     def restart_kernel(self):
         self.Print('[ssh] Restart kernel: Closing connection...')
         self.sshwrapper.close()
+
+    def assert_connected(self):
+        '''
+        Check client is connected or raise.
+        '''
+
+        if not self.sshwrapper.isconnected():
+            self.Error('Not connected')
+            raise SSHKernelNoConnectedException
+
 
     def Login(self, host):
         """
