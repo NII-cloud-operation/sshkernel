@@ -197,8 +197,7 @@ class SSHKernel(MetaKernel):
         except SSHException:
             #
             # FIXME: Implement reconnect sequence
-            output = 'Reconnect SSH...'
-            self.Error(output)
+            return ExceptionWrapper('ssh_exception', code, [])
 
         if interrupted:
             # TODO: Return more information
