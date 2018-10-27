@@ -190,20 +190,19 @@ class SSHKernel(MetaKernel):
             self.process_output(o)
 
         except KeyboardInterrupt:
-            # todo: sendintr
-            # Use paramiko.Channel directly instead of paramiko.Client
-
+            #
+            # FIXME: sendintr
             interrupted = True
             self.Error('* interrupt')
 
         except SSHException:
-            # todo: Implement reconnect sequence
+            #
+            # FIXME: Implement reconnect sequence
             output = 'Reconnect SSH...'
-            self.sshwrapper.connect()
             self.Error(output)
 
         if interrupted:
-            # todo: Return more information
+            # TODO: Return more information
             return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         try:
@@ -215,7 +214,7 @@ class SSHKernel(MetaKernel):
         if exitcode:
             ename = ''
             evalue = str(exitcode)
-            if not 'traceback' in locals():
+            if 'traceback' not in locals():
                 traceback = ''
 
             return ExceptionWrapper(ename, evalue, traceback)
