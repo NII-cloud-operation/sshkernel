@@ -25,7 +25,6 @@ class SSHWrapper(ABC):
         Returns:
             io.TextIOWrapper: Command output stream
         '''
-        raise NotImplementedError
 
     @abstractmethod
     def exit_code(self):
@@ -33,7 +32,6 @@ class SSHWrapper(ABC):
         Returns:
             int: Previous comamand exit code
         '''
-        raise NotImplementedError
 
     @abstractmethod
     def connect(self, host):
@@ -43,25 +41,27 @@ class SSHWrapper(ABC):
         Raises:
             SSHConnectionError
         '''
-        raise NotImplementedError
 
     @abstractmethod
     def close(self):
-        raise NotImplementedError
+        '''
+        Close connection to host
+        '''
 
     @abstractmethod
     def interrupt(self):
         '''
-        Send SIGINT to remote
+        Send SIGINT to halt current execution
         '''
-        raise NotImplementedError
 
     @abstractmethod
     def isconnected(self):
         '''
-        Connected to server or not
+        Connected to host or not
+
+        Returns:
+            bool
         '''
-        pass
 
 
 class SSHWrapperParamiko(SSHWrapper):
@@ -327,5 +327,7 @@ class SSHKernel(MetaKernel):
         return (msg, err)
 
     def Logout(self):
+        '''
+        %logout magic handler
+        '''
         # FIXME
-        raise NotImplementedError
