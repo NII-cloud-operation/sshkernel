@@ -19,7 +19,9 @@ class SSHKernelTest(unittest.TestCase):
     def setUp(self):
         self.instance = SSHKernel()
         self.instance.sshwrapper = Mock(spec=SSHWrapper)
+        self.instance.Error = Mock()
         self.instance.Print = Mock()
+        self.instance.Write = Mock()
 
     def test_new(self):
         self.assertIsInstance(self.instance, Kernel)
@@ -35,19 +37,20 @@ class SSHKernelTest(unittest.TestCase):
         instance.silent = False
         for cmd in ["hello", "world"]:
             with self.subTest(cmd=cmd):
-                instance.Print = Mock()
+                mock = Mock()
+                instance.Write = mock
 
                 stream = io.StringIO("hello world")
                 instance.process_output(stream)
 
-                instance.Print.assert_called_once()
+                mock.assert_called_once()
 
     def test_process_output_with_silent(self):
         self.instance.silent = True
 
         self.instance.process_output("hello")
 
-        self.instance.Print.assert_not_called()
+        self.instance.Write.assert_not_called()
 
     def test_banner(self):
         self.assertIn('SSH', self.instance.banner)
@@ -61,7 +64,7 @@ class SSHKernelTest(unittest.TestCase):
 
         self.instance.sshwrapper.exec_command.assert_called_once_with(cmd)
         self.instance.sshwrapper.exit_code.assert_called_once_with()
-        self.instance.Print.assert_called_once_with(cmd_result)
+        self.instance.Write.assert_called_once_with(cmd_result)
 
     def test_exec_with_error_exit_code_should_return_exception(self):
         self.instance.sshwrapper.exec_command = Mock(return_value=io.StringIO("bash: sl: command not found\n"))
@@ -80,14 +83,30 @@ class SSHKernelTest(unittest.TestCase):
 
     def test_exec_with_interrupt_should_return_exception(self):
         self.instance.sshwrapper.exec_command = Mock(side_effect=KeyboardInterrupt())
-        self.instance.Error = Mock()
 
         err = self.instance.do_execute_direct('sleep 10000')
 
-        self.instance.Print.assert_not_called()
+        self.instance.Write.assert_not_called()
 
         self.assertIsInstance(err, ExceptionWrapper)
         self.instance.Error.assert_called_once()
+
+    def test_restart_kernel_should_call_close(self):
+        mock = Mock()
+        self.instance.sshwrapper.close = mock
+        self.instance.restart_kernel()
+
+        mock.assert_called_once_with()
+
+    def test_login_magic(self):
+        # magic method call is received
+
+        self.instance.sshwrapper = Mock()
+        host = 'dummy'
+        (msg, err) = self.instance.Login(host)
+
+        self.instance.sshwrapper.connect.assert_called_once_with(host)
+        self.assertIsInstance(msg, str)
 
 
 class SSHWrapperParamikoTest(unittest.TestCase):
@@ -182,3 +201,16 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
             self.assertIsInstance(lookup, dict)
             self.assertEqual(hostname, "127.0.0.10")
+
+        with tempfile.NamedTemporaryFile('w') as f:
+            f.write(dedent("""
+            Host test2
+                IdentityFile ~/.ssh/id_rsa_test
+            """))
+
+            f.seek(0)
+
+            (hostname, lookup) = self.instance._init_ssh_config(f.name, "test2")
+
+            self.assertIsInstance(lookup, dict)
+            self.assertEqual(hostname, "test2")
