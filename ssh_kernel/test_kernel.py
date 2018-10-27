@@ -87,6 +87,14 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsInstance(err, ExceptionWrapper)
         self.instance.Error.assert_called_once()
 
+    def test_exec_without_connected_should_return_exception(self):
+        self.instance.sshwrapper.isconnected = Mock(return_value=False)
+        err = self.instance.do_execute_direct('echo Before connect')
+
+        self.instance.sshwrapper.isconnected.assert_called_once_with()
+        self.assertIsInstance(err, ExceptionWrapper)
+
+
     def test_restart_kernel_should_call_close(self):
         self.instance.restart_kernel()
 
