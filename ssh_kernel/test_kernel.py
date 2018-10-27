@@ -63,13 +63,31 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.sshwrapper.exit_code.assert_called_once_with()
         self.instance.Print.assert_called_once_with(cmd_result)
 
-    def test_exec_with_error_exit_code_should_raise_exception(self):
+    def test_exec_with_error_exit_code_should_return_exception(self):
         self.instance.sshwrapper.exec_command = Mock(return_value=io.StringIO("bash: sl: command not found\n"))
         self.instance.sshwrapper.exit_code = Mock(return_value=1)
 
         err = self.instance.do_execute_direct('sl')
 
         self.assertIsInstance(err, ExceptionWrapper)
+
+    def test_exec_with_exception_should_return_exception(self):
+        self.instance.sshwrapper.exec_command = Mock(side_effect=SSHException("boom"))
+
+        err = self.instance.do_execute_direct('sl')
+
+        self.assertIsInstance(err, ExceptionWrapper)
+
+    def test_exec_with_interrupt_should_return_exception(self):
+        self.instance.sshwrapper.exec_command = Mock(side_effect=KeyboardInterrupt())
+        self.instance.Error = Mock()
+
+        err = self.instance.do_execute_direct('sleep 10000')
+
+        self.instance.Print.assert_not_called()
+
+        self.assertIsInstance(err, ExceptionWrapper)
+        self.instance.Error.assert_called_once()
 
 
 class SSHWrapperParamikoTest(unittest.TestCase):
