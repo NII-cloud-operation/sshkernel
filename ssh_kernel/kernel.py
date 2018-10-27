@@ -316,13 +316,3 @@ class SSHKernel(MetaKernel):
             string: Message
             bool: Falsy if succeeded
         """
-
-        #
-        # FIXME: Handle error
-        #
-        self.sshwrapper.connect(host)
-
-        msg = 'Successfully logged in.'
-        err = None
-
-        return (msg, err)

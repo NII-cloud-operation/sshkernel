@@ -100,6 +100,8 @@ class SSHKernelTest(unittest.TestCase):
 
         self.instance.sshwrapper.close.assert_called_once_with()
 
+
+    @unittest.skip("Moving to test_magic.py")
     def test_login_magic(self):
         # magic method call is received
         host = 'dummy'
