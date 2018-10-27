@@ -10,6 +10,7 @@ from .kernel import SSHWrapper
 from .kernel import SSHWrapperParamiko
 from ipykernel.kernelbase import Kernel
 import paramiko
+from metakernel import ExceptionWrapper
 
 
 class SSHKernelTest(unittest.TestCase):
@@ -17,6 +18,7 @@ class SSHKernelTest(unittest.TestCase):
     def setUp(self):
         self.instance = SSHKernel()
         self.instance.sshwrapper = Mock(spec=SSHWrapper)
+        self.instance.Print = Mock()
 
     def test_new(self):
         self.assertIsInstance(self.instance, Kernel)
@@ -32,18 +34,41 @@ class SSHKernelTest(unittest.TestCase):
         instance.silent = False
         for cmd in ["hello", "world"]:
             with self.subTest(cmd=cmd):
-                instance.send_response = Mock()
+                instance.Print = Mock()
 
                 stream = io.StringIO("hello world")
                 instance.process_output(stream)
 
-                instance.send_response.assert_called_once()
+                instance.Print.assert_called_once()
+
+    def test_process_output_with_silent(self):
+        self.instance.silent = True
+
+        self.instance.process_output("hello")
+
+        self.instance.Print.assert_not_called()
 
     def test_banner(self):
         self.assertIn('SSH', self.instance.banner)
 
     def test_do_execute_direct_calls_exec_command(self):
-        self.instance.sshwrapper = Mock(spec=SSHWrapper)
+        cmd = 'date'
+        cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
+        self.instance.sshwrapper.exec_command = MagicMock(return_value=io.StringIO(cmd_result))
+        self.instance.sshwrapper.exit_code = MagicMock()
+        self.instance.do_execute_direct(cmd)
+
+        self.instance.sshwrapper.exec_command.assert_called_once_with(cmd)
+        self.instance.sshwrapper.exit_code.assert_called_once_with()
+        self.instance.Print.assert_called_once_with(cmd_result)
+
+    def test_exec_with_error_exit_code_should_raise_exception(self):
+        self.instance.sshwrapper.exec_command = Mock(return_value=io.StringIO("bash: sl: command not found\n"))
+        self.instance.sshwrapper.exit_code = Mock(return_value=1)
+
+        err = self.instance.do_execute_direct('sl')
+
+        self.assertIsInstance(err, ExceptionWrapper)
 
 
 class SSHWrapperParamikoTest(unittest.TestCase):
