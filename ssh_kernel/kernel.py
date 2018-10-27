@@ -215,7 +215,7 @@ class SSHKernel(MetaKernel):
         if exitcode:
             ename = ''
             evalue = str(exitcode)
-            if not traceback:
+            if not 'traceback' in locals():
                 traceback = ''
 
             return ExceptionWrapper(ename, evalue, traceback)
