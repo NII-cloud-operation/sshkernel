@@ -59,7 +59,6 @@ class SSHKernelTest(unittest.TestCase):
         cmd = 'date'
         cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
         self.instance.sshwrapper.exec_command = MagicMock(return_value=io.StringIO(cmd_result))
-        self.instance.sshwrapper.exit_code = MagicMock()
         self.instance.do_execute_direct(cmd)
 
         self.instance.sshwrapper.exec_command.assert_called_once_with(cmd)
@@ -92,21 +91,17 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.Error.assert_called_once()
 
     def test_restart_kernel_should_call_close(self):
-        mock = Mock()
-        self.instance.sshwrapper.close = mock
         self.instance.restart_kernel()
 
-        mock.assert_called_once_with()
+        self.instance.sshwrapper.close.assert_called_once_with()
 
     def test_login_magic(self):
         # magic method call is received
-
-        self.instance.sshwrapper = Mock()
         host = 'dummy'
         (msg, err) = self.instance.Login(host)
 
-        self.instance.sshwrapper.connect.assert_called_once_with(host)
         self.assertIsInstance(msg, str)
+        self.instance.sshwrapper.connect.assert_called_once_with(host)
 
 
 class SSHWrapperParamikoTest(unittest.TestCase):
