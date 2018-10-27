@@ -1,7 +1,4 @@
-from unittest.mock import MagicMock
-from unittest.mock import PropertyMock
 from unittest.mock import Mock
-from unittest.mock import patch
 import io
 import unittest
 
@@ -58,7 +55,7 @@ class SSHKernelTest(unittest.TestCase):
     def test_do_execute_direct_calls_exec_command(self):
         cmd = 'date'
         cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
-        self.instance.sshwrapper.exec_command = MagicMock(return_value=io.StringIO(cmd_result))
+        self.instance.sshwrapper.exec_command = Mock(return_value=io.StringIO(cmd_result))
         self.instance.do_execute_direct(cmd)
 
         self.instance.sshwrapper.exec_command.assert_called_once_with(cmd)
@@ -135,10 +132,10 @@ class SSHWrapperParamikoTest(unittest.TestCase):
         def cl_connect(host):
             connected = True
 
-        chan_double.read = MagicMock(side_effect=read_double)
-        chan_double.readline = MagicMock(side_effect=readline_double)
-        client_double.exec_command = MagicMock(side_effect=cl_exec_command_double)
-        client_double.connect = MagicMock(side_effect=cl_connect)
+        chan_double.read = Mock(side_effect=read_double)
+        chan_double.readline = Mock(side_effect=readline_double)
+        client_double.exec_command = Mock(side_effect=cl_exec_command_double)
+        client_double.connect = Mock(side_effect=cl_connect)
 
         instance = SSHWrapperParamiko()
         instance._client = client_double
@@ -146,7 +143,7 @@ class SSHWrapperParamikoTest(unittest.TestCase):
         self.instance = instance
 
     def test_connect_should_call_paramiko_connect(self):
-        mock = MagicMock()
+        mock = Mock()
 
         #
         # connect()中にparamiko.SSHClient()をnewするのでそのコンストラクタを差し替える
@@ -173,7 +170,7 @@ class SSHWrapperParamikoTest(unittest.TestCase):
             self.assertIn(meth, dir(ret))
 
     def test_close_should_delegate(self):
-        mock = MagicMock()
+        mock = Mock()
         self.instance._client.close = mock
         self.instance.close()
 
