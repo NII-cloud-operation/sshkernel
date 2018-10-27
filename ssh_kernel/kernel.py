@@ -178,7 +178,7 @@ class SSHKernel(MetaKernel):
     def process_output(self, stream):
         if not self.silent:
             for line in stream:
-                self.Print(line)
+                self.Write(line)
 
     ##############################
     # Implement base class methods
