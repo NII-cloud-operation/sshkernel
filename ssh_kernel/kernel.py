@@ -325,3 +325,7 @@ class SSHKernel(MetaKernel):
         err = None
 
         return (msg, err)
+
+    def Logout(self):
+        # FIXME
+        raise NotImplementedError
