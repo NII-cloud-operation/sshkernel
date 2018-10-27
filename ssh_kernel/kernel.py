@@ -178,8 +178,7 @@ class SSHKernel(MetaKernel):
     def process_output(self, stream):
         if not self.silent:
             for line in stream:
-                stream_content = {'name': 'stdout', 'text': line}
-                self.send_response(self.iopub_socket, 'stream', stream_content)
+                self.Print(line)
 
     ##############################
     # Implement base class methods
