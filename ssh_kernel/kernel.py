@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from logging import INFO
 import codecs
 import os
 import re
@@ -168,6 +169,9 @@ class SSHKernel(MetaKernel):
         super().__init__(**kwargs)
         self.silent = False
 
+        # TODO: Survey logging architecture, should not depend on parent.log
+        self.log.setLevel(INFO)
+        self.redirect_to_log = True
         self.sshwrapper = SSHWrapperParamiko()
 
     def reload_magics(self):
