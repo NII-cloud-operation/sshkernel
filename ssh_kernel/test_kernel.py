@@ -15,20 +15,19 @@ import paramiko
 class SSHKernelTest(unittest.TestCase):
 
     def setUp(self):
-        if not hasattr(self, 'instance'):
-            self.instance = SSHKernel()
-        self.wrapper = Mock(spec=SSHWrapper)
+        self.instance = SSHKernel()
+        self.instance.sshwrapper = Mock(spec=SSHWrapper)
 
     def test_new(self):
         self.assertIsInstance(self.instance, Kernel)
         self.assertIsInstance(self.instance, SSHKernel)
+        self.assertIsInstance(self.instance.sshwrapper, SSHWrapper)
 
     def test_impl(self):
         self.assertEqual(self.instance.implementation, 'ssh_kernel')
 
     def test_process_output(self):
-        instance = SSHKernel()
-        instance.sshwrapper = self.wrapper
+        instance = self.instance
 
         instance.silent = False
         for cmd in ["hello", "world"]:
@@ -39,6 +38,12 @@ class SSHKernelTest(unittest.TestCase):
                 instance.process_output(stream)
 
                 instance.send_response.assert_called_once()
+
+    def test_banner(self):
+        self.assertIn('SSH', self.instance.banner)
+
+    def test_do_execute_direct_calls_exec_command(self):
+        self.instance.sshwrapper = Mock(spec=SSHWrapper)
 
 
 class SSHWrapperParamikoTest(unittest.TestCase):
