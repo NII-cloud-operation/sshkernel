@@ -1,7 +1,7 @@
 from metakernel import Magic
 
 
-class LoginMagic(Magic):
+class SSHKernelMagics(Magic):
 
     def line_login(self, host):
         """
@@ -11,20 +11,41 @@ class LoginMagic(Magic):
         Cells below this line will be executed remotely.
 
         Example:
-            %login localhost
+            [~/.ssh/config]
+            Host myserver
+                Hostname 10.0.0.10
+                Port 2222
+
+            %login myserver
         """
 
         self.kernel.Print('[ssh] Login to {}...'.format(host))
+
         try:
-            msg, err = self.kernel.Login(host)
-            if err:
-                self.kernel.Error("[ssh] Login failed: {}".format(msg))
-                return
-            self.kernel.Print('[ssh] {}'.format(msg))
+            self.kernel.sshwrapper.connect(host)
         except Exception as e:
-            # FIXME: Don't handle all exception
-            self.kernel.Error(str(e))
+            self.kernel.Error("[ssh] Login failed: {}".format(host))
+            raise e
+        else:
+            self.kernel.Print('[ssh] Successfully logged in.')
+
+
+    def line_logout(self):
+        '''
+        %logout
+
+        Logout and disconnect.
+
+        Example:
+            %logout
+        '''
+
+        # TODO: Using self.kernel is awkward
+
+        # TODO: Error handling
+        self.kernel.sshwrapper.close()
+        self.kernel.Print('[ssh] Successfully logged out.')
 
 
 def register_magics(kernel):
-    kernel.register_magics(LoginMagic)
+    kernel.register_magics(SSHKernelMagics)
