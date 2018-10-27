@@ -10,7 +10,8 @@ from .kernel import SSHWrapper
 from .kernel import SSHWrapperParamiko
 from ipykernel.kernelbase import Kernel
 import paramiko
-from metakernel import ExceptionWrapper
+from ssh_kernel import SSHException
+from ssh_kernel import ExceptionWrapper
 
 
 class SSHKernelTest(unittest.TestCase):
@@ -96,7 +97,7 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
         def cl_exec_command_double(cmd, **kwargs):
             if not connected:
-                raise paramiko.SSHException
+                raise SSHException
             return (chan_double(), chan_double(), chan_double())
 
         def cl_connect(host):
@@ -128,7 +129,7 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
 
     def test_exec_command_returns_error_at_first(self):
-        with self.assertRaises(paramiko.SSHException):
+        with self.assertRaises(SSHException):
             self.instance.exec_command('yo')
 
     @unittest.skip("fixing connect")
