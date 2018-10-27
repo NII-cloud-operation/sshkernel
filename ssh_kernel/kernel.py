@@ -67,10 +67,12 @@ class SSHWrapperParamiko(SSHWrapper):
         # Wrap paramiko.BufferedFile to return UTF-8 string stream always
         # Currently, f.read() is bytes stream, and f.readlines() is string.
 
-        # `get_pty` make stderr print in stdin
-        # so we can close stderr immediately
+        #
+        # FIXME: get_pty has pager problem
         i, o, e = self._client.exec_command(cmd, get_pty=True)
 
+        # `get_pty` make stderr print in stdin
+        # so we can close stderr immediately
         i.close()
         e.close()
 
@@ -207,6 +209,8 @@ class SSHKernel(MetaKernel):
         try:
             exitcode = self.sshwrapper.exit_code()
         except Exception as e:
+            #
+            # FIXME: Don't catch Exception
             exitcode = 1
             traceback = str(e)
 
@@ -270,6 +274,9 @@ class SSHKernel(MetaKernel):
             bool: Falsy if succeeded
         """
 
+        #
+        # FIXME: Handle error
+        #
         self.sshwrapper.connect(host)
 
         msg = 'Successfully logged in.'
