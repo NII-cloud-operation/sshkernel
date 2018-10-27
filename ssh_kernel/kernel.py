@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from logging import INFO
-import codecs
 import os
 import re
 
@@ -75,9 +74,7 @@ class SSHWrapperParamiko(SSHWrapper):
         i.close()
         e.close()
 
-        text_stream = codecs.getreader("utf-8")(o)
-
-        return text_stream
+        return o
 
     def exit_code(self):
         # Not implemented yet
@@ -244,22 +241,14 @@ class SSHKernel(MetaKernel):
             # strip leading $
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:]
             o = self.sshwrapper.exec_command(cmd)
-
-            # FIXME: Avoid using .decode() for paramiko.BufferedFile
-            output = o.read().decode('utf-8').rstrip()
-
-            completions = set(output.split())
+            completions = set(o.readlines())
             # append matches including leading $
             matches = ['$'+c for c in completions]
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
             o = self.sshwrapper.exec_command(cmd)
-
-            # FIXME: Avoid using .decode() for paramiko.BufferedFile
-            output = o.read().decode('utf-8').rstrip()
-
-            matches = set(output.split())
+            matches = set(o.readlines())
         if not matches:
             return default
         matches = [m for m in matches if m.startswith(token)]
