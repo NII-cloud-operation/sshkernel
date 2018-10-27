@@ -200,6 +200,11 @@ class SSHKernel(MetaKernel):
     ##############################
     # Implement base class methods
     def do_execute_direct(self, code, silent=False):
+        try:
+            self.assert_connected()
+        except SSHKernelNoConnectedException as e:
+            return ExceptionWrapper('abort', 'not connected', [])
+
         interrupted = False
         try:
             o = self.sshwrapper.exec_command(code)
@@ -237,6 +242,19 @@ class SSHKernel(MetaKernel):
             return ExceptionWrapper(ename, evalue, traceback)
 
     def do_complete(self, code, cursor_pos):
+        try:
+            self.assert_connected()
+        except SSHKernelNoConnectedException as e:
+            # TODO: Error() in `do_complete` not shown in notebook
+            self.log.error('not connected')
+
+            content = {
+                'matches': [],
+                'metadata': {},
+                'status': 'ok',
+            }
+            return content
+
         code = code[:cursor_pos]
         default = {'matches': [], 'cursor_start': 0,
                    'cursor_end': cursor_pos, 'metadata': dict(),
