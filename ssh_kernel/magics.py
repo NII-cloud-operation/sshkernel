@@ -22,6 +22,7 @@ class LoginMagic(Magic):
                 return
             self.kernel.Print('[ssh] {}'.format(msg))
         except Exception as e:
+            # FIXME: Don't handle all exception
             self.kernel.Error(str(e))
 
 

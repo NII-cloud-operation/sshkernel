@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from logging import INFO
 import os
 import re
 
@@ -66,10 +67,12 @@ class SSHWrapperParamiko(SSHWrapper):
         # Wrap paramiko.BufferedFile to return UTF-8 string stream always
         # Currently, f.read() is bytes stream, and f.readlines() is string.
 
-        # `get_pty` make stderr print in stdin
-        # so we can close stderr immediately
+        #
+        # FIXME: get_pty has pager problem
         i, o, e = self._client.exec_command(cmd, get_pty=True)
 
+        # `get_pty` make stderr print in stdin
+        # so we can close stderr immediately
         i.close()
         e.close()
 
@@ -83,12 +86,8 @@ class SSHWrapperParamiko(SSHWrapper):
         if self._client:
             self.close()
 
-        client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.set_missing_host_key_policy(paramiko.WarningPolicy())
-
-        config = self._init_ssh_config('~/.ssh/config')
-        lookup = config.lookup(host)
+        client = self._new_paramiko_client()
+        hostname, lookup = self._init_ssh_config('~/.ssh/config', host)
 
         # Authentication is attempted in the following order of priority:
         # * The pkey or key_filename passed in (if any)
@@ -97,22 +96,18 @@ class SSHWrapperParamiko(SSHWrapper):
         #
         # http://docs.paramiko.org/en/2.4/api/client.html
 
-        if 'hostname' in lookup:
-            hostname = lookup.pop('hostname')
-        else:
-            hostname = host
-        if 'identityfile' in lookup:
-            lookup['key_filename'] = lookup.pop('identityfile')
-        if 'port' in lookup:
-            lookup['port'] = int(lookup.pop('port'))
-        if 'user' in lookup:
-            lookup['username'] = lookup.pop('user')
-
         print(lookup)
 
         client.connect(hostname, **lookup)
 
         self._client = client
+
+    def _new_paramiko_client(self):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
+
+        return client
 
     def close(self):
         self._client.close()
@@ -120,12 +115,26 @@ class SSHWrapperParamiko(SSHWrapper):
     def interrupt(self):
         pass
 
-    def _init_ssh_config(self, filename):
+    def _init_ssh_config(self, filename, host):
         conf = paramiko.config.SSHConfig()
         with open(os.path.expanduser(filename)) as ssh_config:
             conf.parse(ssh_config)
 
-        return conf
+        lookup = conf.lookup(host)
+
+        if 'hostname' in lookup:
+            hostname = lookup.pop('hostname')
+        else:
+            hostname = host
+
+        if 'identityfile' in lookup:
+            lookup['key_filename'] = lookup.pop('identityfile')
+        if 'port' in lookup:
+            lookup['port'] = int(lookup.pop('port'))
+        if 'user' in lookup:
+            lookup['username'] = lookup.pop('user')
+
+        return (hostname, lookup)
 
 
 class SSHKernel(MetaKernel):
@@ -159,6 +168,9 @@ class SSHKernel(MetaKernel):
         super().__init__(**kwargs)
         self.silent = False
 
+        # TODO: Survey logging architecture, should not depend on parent.log
+        self.log.setLevel(INFO)
+        self.redirect_to_log = True
         self.sshwrapper = SSHWrapperParamiko()
 
     def reload_magics(self):
@@ -169,8 +181,7 @@ class SSHKernel(MetaKernel):
     def process_output(self, stream):
         if not self.silent:
             for line in stream:
-                stream_content = {'name': 'stdout', 'text': line}
-                self.send_response(self.iopub_socket, 'stream', stream_content)
+                self.Write(line)
 
     ##############################
     # Implement base class methods
@@ -181,32 +192,32 @@ class SSHKernel(MetaKernel):
             self.process_output(o)
 
         except KeyboardInterrupt:
-            # todo: sendintr
-            # Use paramiko.Channel directly instead of paramiko.Client
-
             interrupted = True
-            self.Error('* interrupt')
+            self.Error('* interrupt...')
+            #
+            # FIXME: sendintr
+
+            #
+            # TODO: Return more information
+            return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         except SSHException:
-            # todo: Implement reconnect sequence
-            output = 'Reconnect SSH...'
-            self.sshwrapper.connect()
-            self.Error(output)
-
-        if interrupted:
-            # todo: Return more information
-            return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
+            #
+            # FIXME: Implement reconnect sequence
+            return ExceptionWrapper('ssh_exception', code, [])
 
         try:
             exitcode = self.sshwrapper.exit_code()
         except Exception as e:
+            #
+            # FIXME: Don't catch Exception
             exitcode = 1
             traceback = str(e)
 
         if exitcode:
             ename = ''
             evalue = str(exitcode)
-            if not traceback:
+            if 'traceback' not in locals():
                 traceback = ''
 
             return ExceptionWrapper(ename, evalue, traceback)
@@ -234,22 +245,14 @@ class SSHKernel(MetaKernel):
             # strip leading $
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:]
             o = self.sshwrapper.exec_command(cmd)
-
-            # FIXME: Avoid using .decode() for paramiko.BufferedFile
-            output = o.read().decode('utf-8').rstrip()
-
-            completions = set(output.split())
+            completions = set(o.readlines())
             # append matches including leading $
             matches = ['$'+c for c in completions]
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
             o = self.sshwrapper.exec_command(cmd)
-
-            # FIXME: Avoid using .decode() for paramiko.BufferedFile
-            output = o.read().decode('utf-8').rstrip()
-
-            matches = set(output.split())
+            matches = set(o.readlines())
         if not matches:
             return default
         matches = [m for m in matches if m.startswith(token)]
@@ -271,6 +274,9 @@ class SSHKernel(MetaKernel):
             bool: Falsy if succeeded
         """
 
+        #
+        # FIXME: Handle error
+        #
         self.sshwrapper.connect(host)
 
         msg = 'Successfully logged in.'

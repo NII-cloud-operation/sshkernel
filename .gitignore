@@ -1,4 +1,6 @@
 /dist/
+/htmlcov/
 
+.coverage
 .ipynb_checkpoints/
 *.ipynb
