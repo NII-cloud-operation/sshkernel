@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from logging import INFO
 import os
 import re
+import traceback
 
 from ipykernel.kernelbase import Kernel
 from paramiko.ssh_exception import SSHException
@@ -219,6 +220,10 @@ class SSHKernel(MetaKernel):
 
             #
             # TODO: Return more information
+            # e.g. https://github.com/Calysto/metakernel/blob/967e803b0f69da73700fe7c014871b3c1eebe335/metakernel/magic.py#L101
+            #
+            self.Error(traceback.format_exc())
+
             return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         except SSHException:
@@ -232,20 +237,20 @@ class SSHKernel(MetaKernel):
             #
             # TODO: Don't catch Exception
             exitcode = 1
-            traceback = [str(e)]
+            tb = [str(e)]
 
         if exitcode:
             ename = 'abnormal exit code'
             evalue = str(exitcode)
-            if 'traceback' not in locals():
-                traceback = ['']
+            if 'tb' not in locals():
+                tb = ['']
 
-            return ExceptionWrapper(ename, evalue, traceback)
+            return ExceptionWrapper(ename, evalue, tb)
 
     def do_complete(self, code, cursor_pos):
         try:
             self.assert_connected()
-        except SSHKernelNoConnectedException as e:
+        except SSHKernelNotConnectedException as e:
             # TODO: Error() in `do_complete` not shown in notebook
             self.log.error('not connected')
 
