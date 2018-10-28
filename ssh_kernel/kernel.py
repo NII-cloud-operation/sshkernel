@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from logging import INFO
 import os
 import re
+import traceback
 
 from ipykernel.kernelbase import Kernel
 from paramiko.ssh_exception import SSHException
@@ -10,7 +11,7 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
-from .exception import SSHKernelNoConnectedException
+from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
 
 __version__ = '0.1.0'
@@ -178,6 +179,14 @@ class SSHKernel(MetaKernel):
                      'mimetype': 'text/x-sh',
                      'file_extension': '.sh'}
 
+    @property
+    def sshwrapper(self):
+        return self._sshwrapper
+
+    @sshwrapper.setter
+    def sshwrapper(self, value):
+        self._ssh_wrapper = value
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.silent = False
@@ -186,7 +195,7 @@ class SSHKernel(MetaKernel):
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
         self.redirect_to_log = True
-        self.sshwrapper = SSHWrapperParamiko()
+        self._sshwrapper = SSHWrapperParamiko()
 
     def reload_magics(self):
         # todo: Avoid depend on private method
@@ -203,7 +212,8 @@ class SSHKernel(MetaKernel):
     def do_execute_direct(self, code, silent=False):
         try:
             self.assert_connected()
-        except SSHKernelNoConnectedException as e:
+        except SSHKernelNotConnectedException as e:
+            self.Error(traceback.format_exc())
             return ExceptionWrapper('abort', 'not connected', [])
 
         interrupted = False
@@ -219,33 +229,37 @@ class SSHKernel(MetaKernel):
 
             #
             # TODO: Return more information
+            # e.g. https://github.com/Calysto/metakernel/blob/967e803b0f69da73700fe7c014871b3c1eebe335/metakernel/magic.py#L101
+            #
+            self.Error(traceback.format_exc())
+
             return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
 
         except SSHException:
             #
-            # FIXME: Implement reconnect sequence
+            # TODO: Implement reconnect sequence
             return ExceptionWrapper('ssh_exception', str(1), [])
 
         try:
             exitcode = self.sshwrapper.exit_code()
         except Exception as e:
             #
-            # FIXME: Don't catch Exception
+            # TODO: Don't catch Exception
             exitcode = 1
-            traceback = str(e)
+            tb = [str(e)]
 
         if exitcode:
-            ename = ''
+            ename = 'abnormal exit code'
             evalue = str(exitcode)
-            if 'traceback' not in locals():
-                traceback = ''
+            if 'tb' not in locals():
+                tb = ['']
 
-            return ExceptionWrapper(ename, evalue, traceback)
+            return ExceptionWrapper(ename, evalue, tb)
 
     def do_complete(self, code, cursor_pos):
         try:
             self.assert_connected()
-        except SSHKernelNoConnectedException as e:
+        except SSHKernelNotConnectedException as e:
             # TODO: Error() in `do_complete` not shown in notebook
             self.log.error('not connected')
 
@@ -304,15 +318,5 @@ class SSHKernel(MetaKernel):
         '''
 
         if not self.sshwrapper.isconnected():
-            self.Error('Not connected')
-            raise SSHKernelNoConnectedException
-
-
-    def Login(self, host):
-        """
-        %login magic handler.
-
-        Returns:
-            string: Message
-            bool: Falsy if succeeded
-        """
+            self.Error('[ssh] Not connected')
+            raise SSHKernelNotConnectedException
