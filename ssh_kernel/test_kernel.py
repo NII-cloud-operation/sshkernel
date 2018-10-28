@@ -89,7 +89,7 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsInstance(err.evalue, str)
         self.assertIsInstance(err.traceback, list)
 
-        self.instance.Error.assert_called_once()
+        self.instance.Error.assert_called()
 
     def test_exec_without_connected_should_return_exception(self):
         self.instance.sshwrapper.isconnected = Mock(return_value=False)

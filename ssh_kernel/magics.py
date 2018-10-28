@@ -24,7 +24,7 @@ class SSHKernelMagics(Magic):
         try:
             self.kernel.sshwrapper.connect(host)
         except Exception as e:
-            self.kernel.Error("[ssh] Login failed: {}".format(host))
+            self.kernel.Error("[ssh] Login to {} failed.".format(host))
             raise e
         else:
             self.kernel.Print('[ssh] Successfully logged in.')

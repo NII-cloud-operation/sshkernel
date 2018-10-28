@@ -205,6 +205,7 @@ class SSHKernel(MetaKernel):
         try:
             self.assert_connected()
         except SSHKernelNotConnectedException as e:
+            self.Error(traceback.format_exc())
             return ExceptionWrapper('abort', 'not connected', [])
 
         interrupted = False
@@ -309,7 +310,6 @@ class SSHKernel(MetaKernel):
         '''
 
         if not self.sshwrapper.isconnected():
-            self.Error('Not connected')
 
 
     def Login(self, host):
@@ -320,4 +320,5 @@ class SSHKernel(MetaKernel):
             string: Message
             bool: Falsy if succeeded
         """
+            self.Error('[ssh] Not connected')
             raise SSHKernelNotConnectedException
