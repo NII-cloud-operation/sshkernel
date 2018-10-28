@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+from unittest.mock import PropertyMock
 import io
 import unittest
 
@@ -15,7 +16,7 @@ class SSHKernelTest(unittest.TestCase):
 
     def setUp(self):
         self.instance = SSHKernel()
-        self.instance.sshwrapper = Mock(spec=SSHWrapper)
+        type(self.instance).sshwrapper = PropertyMock(return_value=Mock(spec=SSHWrapper))
         self.instance.Error = Mock()
         self.instance.Print = Mock()
         self.instance.Write = Mock()
@@ -24,6 +25,13 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsInstance(self.instance, Kernel)
         self.assertIsInstance(self.instance, SSHKernel)
         self.assertIsInstance(self.instance.sshwrapper, SSHWrapper)
+
+    def test_property_mock_returns_sshwrapper_mock(self):
+        ''' test for mock '''
+        self.assertIsInstance(self.instance.sshwrapper, SSHWrapper)
+
+        with self.assertRaises(AttributeError):
+            self.instance.sshwrapper.nomethod()
 
     def test_impl(self):
         self.assertEqual(self.instance.implementation, 'ssh_kernel')
