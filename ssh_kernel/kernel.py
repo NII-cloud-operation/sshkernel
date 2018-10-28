@@ -11,7 +11,7 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
-from .exception import SSHKernelNoConnectedException
+from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
 
 __version__ = '0.1.0'
@@ -204,7 +204,7 @@ class SSHKernel(MetaKernel):
     def do_execute_direct(self, code, silent=False):
         try:
             self.assert_connected()
-        except SSHKernelNoConnectedException as e:
+        except SSHKernelNotConnectedException as e:
             return ExceptionWrapper('abort', 'not connected', [])
 
         interrupted = False
@@ -310,7 +310,6 @@ class SSHKernel(MetaKernel):
 
         if not self.sshwrapper.isconnected():
             self.Error('Not connected')
-            raise SSHKernelNoConnectedException
 
 
     def Login(self, host):
@@ -321,3 +320,4 @@ class SSHKernel(MetaKernel):
             string: Message
             bool: Falsy if succeeded
         """
+            raise SSHKernelNotConnectedException
