@@ -310,15 +310,5 @@ class SSHKernel(MetaKernel):
         '''
 
         if not self.sshwrapper.isconnected():
-
-
-    def Login(self, host):
-        """
-        %login magic handler.
-
-        Returns:
-            string: Message
-            bool: Falsy if succeeded
-        """
             self.Error('[ssh] Not connected')
             raise SSHKernelNotConnectedException
