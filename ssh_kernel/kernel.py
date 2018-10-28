@@ -179,6 +179,14 @@ class SSHKernel(MetaKernel):
                      'mimetype': 'text/x-sh',
                      'file_extension': '.sh'}
 
+    @property
+    def sshwrapper(self):
+        return self._sshwrapper
+
+    @sshwrapper.setter
+    def sshwrapper(self, value):
+        self._ssh_wrapper = value
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.silent = False
@@ -187,7 +195,7 @@ class SSHKernel(MetaKernel):
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
         self.redirect_to_log = True
-        self.sshwrapper = SSHWrapperParamiko()
+        self._sshwrapper = SSHWrapperParamiko()
 
     def reload_magics(self):
         # todo: Avoid depend on private method
