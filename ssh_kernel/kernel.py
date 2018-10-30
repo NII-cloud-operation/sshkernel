@@ -14,7 +14,7 @@ from metakernel import MetaKernel
 from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
