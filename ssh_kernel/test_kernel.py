@@ -1,3 +1,4 @@
+from textwrap import dedent
 from unittest.mock import Mock
 from unittest.mock import PropertyMock
 import io
@@ -122,6 +123,53 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsInstance(msg, str)
         self.instance.sshwrapper.connect.assert_called_once_with(host)
 
+    def check_completion(self, result):
+        self.assertEqual(result['status'], 'ok')
+
+        self.assertIn('matches', result)
+        matches = result['matches']
+        self.assertTrue(matches, sorted(matches))
+        self.assertTrue(matches, [e.rstrip() for e in matches])
+
+    def test_complete_bash_variables(self):
+        result = io.StringIO(dedent(
+            """\
+            BASH_ARGC
+            BASH_ARGV
+            BASH_LINENO
+            BASH_REMATCH
+            """))
+        self.instance.sshwrapper.exec_command.return_value = result
+
+        res = self.instance.do_complete('$BASH', 5)
+
+        self.instance.sshwrapper.exec_command.assert_called_once()
+        self.check_completion(res)
+
+        self.assertEqual(
+            res['matches'],
+            ['$BASH_ARGC', '$BASH_ARGV', '$BASH_LINENO', '$BASH_REMATCH']
+        )
+
+    def test_complete_bash_commands(self):
+        result = io.StringIO(dedent(
+            """\
+            ls
+            ls
+            lspcmcia
+            lslogins
+            """))
+        self.instance.sshwrapper.exec_command.return_value = result
+
+        res = self.instance.do_complete('ls', 3)
+        self.check_completion(res)
+
+        self.instance.sshwrapper.exec_command.assert_called_once()
+        self.assertEqual(
+            res['matches'],
+            ['ls', 'lslogins', 'lspcmcia']
+        )
+
 
 class SSHWrapperParamikoTest(unittest.TestCase):
 
@@ -200,7 +248,6 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
     def test_init_ssh_config(self):
         import tempfile
-        from textwrap import dedent
         with tempfile.NamedTemporaryFile('w') as f:
             f.write(dedent("""
             Host test
