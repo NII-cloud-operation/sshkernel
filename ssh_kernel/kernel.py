@@ -14,7 +14,7 @@ from metakernel import MetaKernel
 from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -292,14 +292,15 @@ class SSHKernel(MetaKernel):
             # strip leading $
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:]
             o = self.sshwrapper.exec_command(cmd)
-            completions = set(o.readlines())
+            completions = set([line.rstrip() for line in o.readlines()])
             # append matches including leading $
             matches = ['$'+c for c in completions]
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
             o = self.sshwrapper.exec_command(cmd)
-            matches = set(o.readlines())
+            matches = set([line.rstrip() for line in o.readlines()])
+
         if not matches:
             return default
         matches = [m for m in matches if m.startswith(token)]
