@@ -1,6 +1,8 @@
 /dist/
 /htmlcov/
+.tox/
 
 .coverage
 .ipynb_checkpoints/
 *.ipynb
+*.egg-info
