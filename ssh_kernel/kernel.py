@@ -12,10 +12,9 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
+from . import __version__
 from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
-
-__version__ = '0.1.1'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
