@@ -275,3 +275,23 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
             self.assertIsInstance(lookup, dict)
             self.assertEqual(hostname, "test2")
+
+        with tempfile.NamedTemporaryFile('w') as f:
+            f.write(dedent("""
+            ForwardAgent yes  ## Cannot handle
+
+            Host test3
+                User admin
+                Port 2222
+                HostName 1.2.3.4
+                IdentityFile ~/.ssh/id_rsa_test
+            """))
+
+            f.seek(0)
+
+            (hostname, lookup) = self.instance._init_ssh_config(f.name, "test3")
+
+            self.assertEqual(
+                set(lookup.keys()),
+                set(['username', 'port', 'key_filename'])
+            )

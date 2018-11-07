@@ -106,6 +106,7 @@ class SSHWrapperParamiko(SSHWrapper):
         #
         # http://docs.paramiko.org/en/2.4/api/client.html
 
+        # Visible in notebook because Metakernel override sys.stdout.write()
         print(lookup)
 
         client.connect(hostname, **lookup)
@@ -131,9 +132,17 @@ class SSHWrapperParamiko(SSHWrapper):
         return self._connected
 
     def _init_ssh_config(self, filename, host):
+        supported_fields = [
+            'key_filename',
+            'port',
+            'username',
+        ]
         conf = paramiko.config.SSHConfig()
-        with open(os.path.expanduser(filename)) as ssh_config:
-            conf.parse(ssh_config)
+        expanded_path = os.path.expanduser(filename)
+
+        if os.path.exists(expanded_path):
+            with open(expanded_path) as ssh_config:
+                conf.parse(ssh_config)
 
         lookup = conf.lookup(host)
 
@@ -149,7 +158,10 @@ class SSHWrapperParamiko(SSHWrapper):
         if 'user' in lookup:
             lookup['username'] = lookup.pop('user')
 
-        return (hostname, lookup)
+        keys_filtered = set(supported_fields) & set(lookup.keys())
+        lookup_filtered = dict((k, lookup[k]) for k in keys_filtered)
+
+        return (hostname, lookup_filtered)
 
 
 class SSHKernel(MetaKernel):
