@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from logging import INFO
+from textwrap import dedent
 import os
 import re
 import traceback
@@ -11,10 +12,9 @@ import paramiko
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
+from . import __version__
 from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
-
-__version__ = '0.1.1'
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -186,6 +186,16 @@ class SSHKernel(MetaKernel):
     @sshwrapper.setter
     def sshwrapper(self, value):
         self._ssh_wrapper = value
+
+    def get_usage(self):
+        return dedent('''Usage:
+
+        * Prepare `~/.ssh/config`
+        * To login to the remote server, use magic command `%login <host_in_ssh_config>` into a new cell
+            * e.g. `%login localhost`
+        * After %login, input commands are executed remotely
+        * To close session, use `%logout` magic command
+        ''')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
