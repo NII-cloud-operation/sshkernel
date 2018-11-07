@@ -106,6 +106,7 @@ class SSHWrapperParamiko(SSHWrapper):
         #
         # http://docs.paramiko.org/en/2.4/api/client.html
 
+        # Visible in notebook because Metakernel override sys.stdout.write()
         print(lookup)
 
         client.connect(hostname, **lookup)
