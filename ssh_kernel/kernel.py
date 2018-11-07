@@ -132,9 +132,11 @@ class SSHWrapperParamiko(SSHWrapper):
 
     def _init_ssh_config(self, filename, host):
         conf = paramiko.config.SSHConfig()
-        with open(os.path.expanduser(filename)) as ssh_config:
-            conf.parse(ssh_config)
+        expanded_path = os.path.expanduser(filename)
 
+        if os.path.exists(expanded_path):
+            with open(expanded_path) as ssh_config:
+                conf.parse(ssh_config)
         lookup = conf.lookup(host)
 
         if 'hostname' in lookup:
