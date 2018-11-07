@@ -71,18 +71,14 @@ class SSHWrapperParamiko(SSHWrapper):
         self._connected = False
 
     def exec_command(self, cmd):
-        # fixme: raise unless _client.connect() is not succeeded
-
         # FIXME:
-        # Wrap paramiko.BufferedFile to return UTF-8 string stream always
-        # Currently, f.read() is bytes stream, and f.readlines() is string.
+        # Make paramiko.BufferedFile always return UTF-8 string stream.
+        # Currently, f.read() returns bytes-stream, and f.readlines() returns string.
 
-        #
-        # FIXME: get_pty has pager problem
         i, o, e = self._client.exec_command(cmd, get_pty=True)
 
         # `get_pty` make stderr print in stdin
-        # so we can close stderr immediately
+        # so stderr can be closed immediately
         i.close()
         e.close()
 
@@ -106,7 +102,6 @@ class SSHWrapperParamiko(SSHWrapper):
         #
         # http://docs.paramiko.org/en/2.4/api/client.html
 
-        # Visible in notebook because Metakernel override sys.stdout.write()
         print(lookup)
 
         client.connect(hostname, **lookup)
@@ -166,9 +161,7 @@ class SSHWrapperParamiko(SSHWrapper):
 
 class SSHKernel(MetaKernel):
     '''
-    SSH kernel run commands remotely
-
-    Forked from bash_kernel
+    SSH kernel run commands remotely.
     '''
     implementation = 'ssh_kernel'
     implementation_version = __version__
@@ -213,14 +206,13 @@ class SSHKernel(MetaKernel):
         super().__init__(**kwargs)
         self.silent = False
 
-        # TODO: Survey logging architecture, should not depend on parent.log
+        # TODO: Survey logging architecture
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
         self.redirect_to_log = True
         self._sshwrapper = SSHWrapperParamiko()
 
     def reload_magics(self):
-        # todo: Avoid depend on private method
         super().reload_magics()
         register_magics(self)
 
@@ -229,8 +221,7 @@ class SSHKernel(MetaKernel):
             for line in stream:
                 self.Write(line)
 
-    ##############################
-    # Implement base class methods
+    # Implement base class method
     def do_execute_direct(self, code, silent=False):
         try:
             self.assert_connected()
@@ -238,21 +229,15 @@ class SSHKernel(MetaKernel):
             self.Error(traceback.format_exc())
             return ExceptionWrapper('abort', 'not connected', [])
 
-        interrupted = False
         try:
             o = self.sshwrapper.exec_command(code)
             self.process_output(o)
 
         except KeyboardInterrupt:
-            interrupted = True
             self.Error('* interrupt...')
             #
             # FIXME: sendintr
 
-            #
-            # TODO: Return more information
-            # e.g. https://github.com/Calysto/metakernel/blob/967e803b0f69da73700fe7c014871b3c1eebe335/metakernel/magic.py#L101
-            #
             self.Error(traceback.format_exc())
 
             return ExceptionWrapper('abort', str(1), [str(KeyboardInterrupt)])
@@ -278,6 +263,7 @@ class SSHKernel(MetaKernel):
 
             return ExceptionWrapper(ename, evalue, tb)
 
+    # Implement base class method
     def do_complete(self, code, cursor_pos):
         try:
             self.assert_connected()
@@ -337,7 +323,7 @@ class SSHKernel(MetaKernel):
 
     def assert_connected(self):
         '''
-        Check client is connected or raise.
+        Assert client is connected.
         '''
 
         if not self.sshwrapper.isconnected():
