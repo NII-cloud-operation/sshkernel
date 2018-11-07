@@ -1,6 +1,7 @@
 /dist/
 /htmlcov/
 .tox/
+.vscode/
 
 .coverage
 .ipynb_checkpoints/
