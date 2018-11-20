@@ -75,17 +75,29 @@ class SSHWrapperParamiko(SSHWrapper):
         self._connected = False
 
     def exec_command(self, cmd, print_function):
-        i, o, e = self._client.exec_command(cmd, get_pty=True)
+        bufsize = -1
+        timeout = None
+        get_pty = True
+        environment = None
+        trans = self._client.get_transport()
+        chan = trans.open_session(timeout=timeout)
 
-        # `get_pty` make stderr print in stdin
-        # so stderr can be closed immediately
-        i.close()
-        e.close()
+        if get_pty:
+            chan.get_pty()
+        chan.settimeout(timeout)
+        if environment:
+            chan.update_environment(environment)
+        chan.exec_command(cmd)
+        out = chan.makefile("r", bufsize)
+        #stdin = chan.makefile("wb", bufsize)
+        #stderr = chan.makefile_stderr("r", bufsize)
 
-        for line in o:
+        #
+        # Note: With `get_pty`, `out` has both STDOUT and STDERR
+        for line in out:
             print_function(line)
 
-        return 0
+        return chan.recv_exit_status()
 
     def exit_code(self):
         # Not implemented yet
