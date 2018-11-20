@@ -240,7 +240,7 @@ class SSHKernel(MetaKernel):
             return ExceptionWrapper('abort', 'not connected', [])
 
         try:
-            self.sshwrapper.exec_command(code, self.Write)
+            exitcode = self.sshwrapper.exec_command(code, self.Write)
 
         except KeyboardInterrupt:
             self.Error('* interrupt...')
@@ -255,14 +255,6 @@ class SSHKernel(MetaKernel):
             #
             # TODO: Implement reconnect sequence
             return ExceptionWrapper('ssh_exception', str(1), [])
-
-        try:
-            exitcode = self.sshwrapper.exit_code()
-        except Exception as e:
-            #
-            # TODO: Don't catch Exception
-            exitcode = 1
-            tb = [str(e)]
 
         if exitcode:
             ename = 'abnormal exit code'
