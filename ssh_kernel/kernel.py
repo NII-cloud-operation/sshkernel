@@ -32,13 +32,6 @@ class SSHWrapper(ABC):
         '''
 
     @abstractmethod
-    def exit_code(self):
-        '''
-        Returns:
-            int: Previous comamand exit code
-        '''
-
-    @abstractmethod
     def connect(self, host):
         '''
         Connect to host
@@ -98,10 +91,6 @@ class SSHWrapperParamiko(SSHWrapper):
             print_function(line)
 
         return chan.recv_exit_status()
-
-    def exit_code(self):
-        # Not implemented yet
-        return 0
 
     def connect(self, host):
         if self._client:
