@@ -37,27 +37,6 @@ class SSHKernelTest(unittest.TestCase):
     def test_impl(self):
         self.assertEqual(self.instance.implementation, 'ssh_kernel')
 
-    def test_process_output(self):
-        instance = self.instance
-
-        instance.silent = False
-        for cmd in ["hello", "world"]:
-            with self.subTest(cmd=cmd):
-                mock = Mock()
-                instance.Write = mock
-
-                stream = io.StringIO("hello world")
-                instance.process_output(stream)
-
-                mock.assert_called_once()
-
-    def test_process_output_with_silent(self):
-        self.instance.silent = True
-
-        self.instance.process_output("hello")
-
-        self.instance.Write.assert_not_called()
-
     def test_banner(self):
         self.assertIn('SSH', self.instance.banner)
 
