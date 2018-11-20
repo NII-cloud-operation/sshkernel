@@ -300,15 +300,18 @@ class SSHKernel(MetaKernel):
 
             # strip leading $
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:]
-            o = self.sshwrapper.exec_command(cmd)
-            completions = set([line.rstrip() for line in o.readlines()])
+            completions = set()
+            callback = lambda line: completions.add(line.rstrip())
+            self.sshwrapper.exec_command(cmd, callback)
+
             # append matches including leading $
             matches = ['$'+c for c in completions]
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
-            o = self.sshwrapper.exec_command(cmd)
-            matches = set([line.rstrip() for line in o.readlines()])
+            matches = set()
+            callback = lambda line: matches.add(line.rstrip())
+            self.sshwrapper.exec_command(cmd, callback)
 
         if not matches:
             return default
