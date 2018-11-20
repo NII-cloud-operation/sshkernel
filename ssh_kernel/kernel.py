@@ -219,11 +219,6 @@ class SSHKernel(MetaKernel):
         super().reload_magics()
         register_magics(self)
 
-    def process_output(self, stream):
-        if not self.silent:
-            for line in stream:
-                self.Write(line)
-
     # Implement base class method
     def do_execute_direct(self, code, silent=False):
         try:
