@@ -21,10 +21,14 @@ version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
 class SSHWrapper(ABC):
     @abstractmethod
-    def exec_command(self, cmd):
+    def exec_command(self, cmd, print_function):
         '''
+        Args:
+            cmd (string)
+            print_function (lambda)
+
         Returns:
-            io.TextIOWrapper: Command output stream
+            int: exit code
         '''
 
     @abstractmethod
@@ -70,11 +74,7 @@ class SSHWrapperParamiko(SSHWrapper):
         self._client = None
         self._connected = False
 
-    def exec_command(self, cmd):
-        # FIXME:
-        # Make paramiko.BufferedFile always return UTF-8 string stream.
-        # Currently, f.read() returns bytes-stream, and f.readlines() returns string.
-
+    def exec_command(self, cmd, print_function):
         i, o, e = self._client.exec_command(cmd, get_pty=True)
 
         # `get_pty` make stderr print in stdin
@@ -82,7 +82,10 @@ class SSHWrapperParamiko(SSHWrapper):
         i.close()
         e.close()
 
-        return o
+        for line in o:
+            print_function(line)
+
+        return 0
 
     def exit_code(self):
         # Not implemented yet
@@ -230,8 +233,7 @@ class SSHKernel(MetaKernel):
             return ExceptionWrapper('abort', 'not connected', [])
 
         try:
-            o = self.sshwrapper.exec_command(code)
-            self.process_output(o)
+            self.sshwrapper.exec_command(code, self.Write)
 
         except KeyboardInterrupt:
             self.Error('* interrupt...')
