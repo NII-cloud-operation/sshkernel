@@ -180,10 +180,10 @@ class SSHWrapperParamikoTest(unittest.TestCase):
                 io.BytesIO(),
             )
 
-        def cl_exec_command_double(cmd, **kwargs):
+        def cl_exec_command_double(cmd, print_function, **kwargs):
             if not connected:
                 raise SSHException
-            return (chan_double(), chan_double(), chan_double())
+            return 0
 
         def cl_connect(host):
             connected = True
