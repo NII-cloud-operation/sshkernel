@@ -43,26 +43,23 @@ class SSHKernelTest(unittest.TestCase):
     def test_do_execute_direct_calls_exec_command(self):
         cmd = 'date'
         cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
-        print_function = self.instance.Write
-        self.instance.sshwrapper.exec_command = Mock(return_value=0, side_effect=self.instance.Write)
-        self.instance.do_execute_direct(cmd, print_function)
+        print_function = Mock()
+        self.instance.sshwrapper.exec_command = Mock(return_value=0)
 
+        self.assertEqual(0, self.instance.sshwrapper.exec_command())
+
+        err = self.instance.do_execute_direct(cmd, print_function)
+
+        self.assertIsNone(err)
         self.instance.sshwrapper.exec_command.assert_called()
-        # self.instance.sshwrapper.exec_command.assert_called_once_with(cmd, print_function)
-        # self.instance.sshwrapper.exit_code.assert_called_once_with()
-        self.instance.Write.assert_called()
-        # self.instance.Write.assert_called_once_with(cmd_result)
 
     def test_exec_with_error_exit_code_should_return_exception(self):
-        #
-        # FIXME: pass regardless return value
-        #
-
-        self.instance.sshwrapper.exec_command = Mock(return_value=1, side_effect=self.instance.Write)
+        self.instance.sshwrapper.exec_command = Mock(return_value=1)
 
         err = self.instance.do_execute_direct('sl')
 
         self.assertIsInstance(err, ExceptionWrapper)
+        self.assertEqual(err.evalue, '1')
 
     def test_exec_with_exception_should_return_exception(self):
         self.instance.sshwrapper.exec_command = Mock(side_effect=SSHException("boom"))
