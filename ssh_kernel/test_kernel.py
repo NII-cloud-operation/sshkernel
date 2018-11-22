@@ -118,18 +118,24 @@ class SSHKernelTest(unittest.TestCase):
         self.assertEqual(matches, [e.rstrip() for e in matches])
 
     def test_complete_bash_variables(self):
-        result = io.StringIO(dedent(
-            """\
-            BASH_ARGC
-            BASH_ARGV
-            BASH_LINENO
-            BASH_REMATCH
-            """))
-        self.instance.sshwrapper.exec_command.return_value = result
+        def exec_double(cmd, callback):
+            result = dedent(
+                """\
+                BASH_ARGC
+                BASH_ARGV
+                BASH_LINENO
+                BASH_REMATCH
+                """)
+            for line in result.split():
+                callback(line)
+
+            return 0
+
+        # Replace with double without Mock()
+        self.instance.sshwrapper.exec_command = exec_double
 
         res = self.instance.do_complete('$BASH', 5)
 
-        self.instance.sshwrapper.exec_command.assert_called_once()
         self.check_completion(res)
 
         self.assertEqual(
@@ -138,19 +144,23 @@ class SSHKernelTest(unittest.TestCase):
         )
 
     def test_complete_bash_commands(self):
-        result = io.StringIO(dedent(
-            """\
-            ls
-            ls
-            lspcmcia
-            lslogins
-            """))
-        self.instance.sshwrapper.exec_command.return_value = result
+        def exec_double(cmd, callback):
+            result = dedent(
+                """\
+                ls
+                ls
+                lspcmcia
+                lslogins
+                """)
+            for line in result.split():
+                callback(line)
+            return 0
+
+        self.instance.sshwrapper.exec_command = exec_double
 
         res = self.instance.do_complete('ls', 3)
         self.check_completion(res)
 
-        self.instance.sshwrapper.exec_command.assert_called_once()
         self.assertEqual(
             res['matches'],
             ['ls', 'lslogins', 'lspcmcia']
