@@ -109,12 +109,13 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.sshwrapper.connect.assert_called_once_with(host)
 
     def check_completion(self, result):
+        self.assertIsInstance(result, dict)
         self.assertEqual(result['status'], 'ok')
 
         self.assertIn('matches', result)
         matches = result['matches']
-        self.assertTrue(matches, sorted(matches))
-        self.assertTrue(matches, [e.rstrip() for e in matches])
+        self.assertEqual(matches, sorted(matches))
+        self.assertEqual(matches, [e.rstrip() for e in matches])
 
     def test_complete_bash_variables(self):
         result = io.StringIO(dedent(
