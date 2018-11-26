@@ -21,17 +21,14 @@ version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
 class SSHWrapper(ABC):
     @abstractmethod
-    def exec_command(self, cmd):
+    def exec_command(self, cmd, print_function):
         '''
-        Returns:
-            io.TextIOWrapper: Command output stream
-        '''
+        Args:
+            cmd (string)
+            print_function (lambda)
 
-    @abstractmethod
-    def exit_code(self):
-        '''
         Returns:
-            int: Previous comamand exit code
+            int: exit code
         '''
 
     @abstractmethod
@@ -70,23 +67,30 @@ class SSHWrapperParamiko(SSHWrapper):
         self._client = None
         self._connected = False
 
-    def exec_command(self, cmd):
-        # FIXME:
-        # Make paramiko.BufferedFile always return UTF-8 string stream.
-        # Currently, f.read() returns bytes-stream, and f.readlines() returns string.
+    def exec_command(self, cmd, print_function):
+        bufsize = -1
+        timeout = None
+        get_pty = True
+        environment = None
+        trans = self._client.get_transport()
+        chan = trans.open_session(timeout=timeout)
 
-        i, o, e = self._client.exec_command(cmd, get_pty=True)
+        if get_pty:
+            chan.get_pty()
+        chan.settimeout(timeout)
+        if environment:
+            chan.update_environment(environment)
+        chan.exec_command(cmd)
+        out = chan.makefile("r", bufsize)
+        #stdin = chan.makefile("wb", bufsize)
+        #stderr = chan.makefile_stderr("r", bufsize)
 
-        # `get_pty` make stderr print in stdin
-        # so stderr can be closed immediately
-        i.close()
-        e.close()
+        #
+        # Note: With `get_pty`, `out` has both STDOUT and STDERR
+        for line in out:
+            print_function(line)
 
-        return o
-
-    def exit_code(self):
-        # Not implemented yet
-        return 0
+        return chan.recv_exit_status()
 
     def connect(self, host):
         if self._client:
@@ -216,11 +220,6 @@ class SSHKernel(MetaKernel):
         super().reload_magics()
         register_magics(self)
 
-    def process_output(self, stream):
-        if not self.silent:
-            for line in stream:
-                self.Write(line)
-
     # Implement base class method
     def do_execute_direct(self, code, silent=False):
         try:
@@ -230,8 +229,7 @@ class SSHKernel(MetaKernel):
             return ExceptionWrapper('abort', 'not connected', [])
 
         try:
-            o = self.sshwrapper.exec_command(code)
-            self.process_output(o)
+            exitcode = self.sshwrapper.exec_command(code, self.Write)
 
         except KeyboardInterrupt:
             self.Error('* interrupt...')
@@ -246,14 +244,6 @@ class SSHKernel(MetaKernel):
             #
             # TODO: Implement reconnect sequence
             return ExceptionWrapper('ssh_exception', str(1), [])
-
-        try:
-            exitcode = self.sshwrapper.exit_code()
-        except Exception as e:
-            #
-            # TODO: Don't catch Exception
-            exitcode = 1
-            tb = [str(e)]
 
         if exitcode:
             ename = 'abnormal exit code'
@@ -299,15 +289,18 @@ class SSHKernel(MetaKernel):
 
             # strip leading $
             cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:]
-            o = self.sshwrapper.exec_command(cmd)
-            completions = set([line.rstrip() for line in o.readlines()])
+            completions = set()
+            callback = lambda line: completions.add(line.rstrip())
+            self.sshwrapper.exec_command(cmd, callback)
+
             # append matches including leading $
             matches = ['$'+c for c in completions]
         else:
             # complete functions and builtins
             cmd = 'compgen -cdfa %s' % token
-            o = self.sshwrapper.exec_command(cmd)
-            matches = set([line.rstrip() for line in o.readlines()])
+            matches = set()
+            callback = lambda line: matches.add(line.rstrip())
+            self.sshwrapper.exec_command(cmd, callback)
 
         if not matches:
             return default

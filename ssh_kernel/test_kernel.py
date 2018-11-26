@@ -37,47 +37,29 @@ class SSHKernelTest(unittest.TestCase):
     def test_impl(self):
         self.assertEqual(self.instance.implementation, 'ssh_kernel')
 
-    def test_process_output(self):
-        instance = self.instance
-
-        instance.silent = False
-        for cmd in ["hello", "world"]:
-            with self.subTest(cmd=cmd):
-                mock = Mock()
-                instance.Write = mock
-
-                stream = io.StringIO("hello world")
-                instance.process_output(stream)
-
-                mock.assert_called_once()
-
-    def test_process_output_with_silent(self):
-        self.instance.silent = True
-
-        self.instance.process_output("hello")
-
-        self.instance.Write.assert_not_called()
-
     def test_banner(self):
         self.assertIn('SSH', self.instance.banner)
 
     def test_do_execute_direct_calls_exec_command(self):
         cmd = 'date'
         cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
-        self.instance.sshwrapper.exec_command = Mock(return_value=io.StringIO(cmd_result))
-        self.instance.do_execute_direct(cmd)
+        print_function = Mock()
+        self.instance.sshwrapper.exec_command = Mock(return_value=0)
 
-        self.instance.sshwrapper.exec_command.assert_called_once_with(cmd)
-        self.instance.sshwrapper.exit_code.assert_called_once_with()
-        self.instance.Write.assert_called_once_with(cmd_result)
+        self.assertEqual(0, self.instance.sshwrapper.exec_command())
+
+        err = self.instance.do_execute_direct(cmd, print_function)
+
+        self.assertIsNone(err)
+        self.instance.sshwrapper.exec_command.assert_called()
 
     def test_exec_with_error_exit_code_should_return_exception(self):
-        self.instance.sshwrapper.exec_command = Mock(return_value=io.StringIO("bash: sl: command not found\n"))
-        self.instance.sshwrapper.exit_code = Mock(return_value=1)
+        self.instance.sshwrapper.exec_command = Mock(return_value=1)
 
         err = self.instance.do_execute_direct('sl')
 
         self.assertIsInstance(err, ExceptionWrapper)
+        self.assertEqual(err.evalue, '1')
 
     def test_exec_with_exception_should_return_exception(self):
         self.instance.sshwrapper.exec_command = Mock(side_effect=SSHException("boom"))
@@ -124,26 +106,33 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.sshwrapper.connect.assert_called_once_with(host)
 
     def check_completion(self, result):
+        self.assertIsInstance(result, dict)
         self.assertEqual(result['status'], 'ok')
 
         self.assertIn('matches', result)
         matches = result['matches']
-        self.assertTrue(matches, sorted(matches))
-        self.assertTrue(matches, [e.rstrip() for e in matches])
+        self.assertEqual(matches, sorted(matches))
+        self.assertEqual(matches, [e.rstrip() for e in matches])
 
     def test_complete_bash_variables(self):
-        result = io.StringIO(dedent(
-            """\
-            BASH_ARGC
-            BASH_ARGV
-            BASH_LINENO
-            BASH_REMATCH
-            """))
-        self.instance.sshwrapper.exec_command.return_value = result
+        def exec_double(cmd, callback):
+            result = dedent(
+                """\
+                BASH_ARGC
+                BASH_ARGV
+                BASH_LINENO
+                BASH_REMATCH
+                """)
+            for line in result.split():
+                callback(line)
+
+            return 0
+
+        # Replace with double without Mock()
+        self.instance.sshwrapper.exec_command = exec_double
 
         res = self.instance.do_complete('$BASH', 5)
 
-        self.instance.sshwrapper.exec_command.assert_called_once()
         self.check_completion(res)
 
         self.assertEqual(
@@ -152,19 +141,23 @@ class SSHKernelTest(unittest.TestCase):
         )
 
     def test_complete_bash_commands(self):
-        result = io.StringIO(dedent(
-            """\
-            ls
-            ls
-            lspcmcia
-            lslogins
-            """))
-        self.instance.sshwrapper.exec_command.return_value = result
+        def exec_double(cmd, callback):
+            result = dedent(
+                """\
+                ls
+                ls
+                lspcmcia
+                lslogins
+                """)
+            for line in result.split():
+                callback(line)
+            return 0
+
+        self.instance.sshwrapper.exec_command = exec_double
 
         res = self.instance.do_complete('ls', 3)
         self.check_completion(res)
 
-        self.instance.sshwrapper.exec_command.assert_called_once()
         self.assertEqual(
             res['matches'],
             ['ls', 'lslogins', 'lspcmcia']
@@ -194,10 +187,10 @@ class SSHWrapperParamikoTest(unittest.TestCase):
                 io.BytesIO(),
             )
 
-        def cl_exec_command_double(cmd, **kwargs):
+        def cl_exec_command_double(cmd, print_function, **kwargs):
             if not connected:
                 raise SSHException
-            return (chan_double(), chan_double(), chan_double())
+            return 0
 
         def cl_connect(host):
             connected = True
@@ -228,8 +221,11 @@ class SSHWrapperParamikoTest(unittest.TestCase):
 
 
     def test_exec_command_returns_error_at_first(self):
+        self.instance._client = Mock()
+        self.instance._client.get_transport = Mock(side_effect=SSHException)
+
         with self.assertRaises(SSHException):
-            self.instance.exec_command('yo')
+            self.instance.exec_command('yo', lambda line: None)
 
     @unittest.skip("fixing connect")
     def test_exec_command_returns_stream(self):
