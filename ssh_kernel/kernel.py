@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from logging import INFO
 from textwrap import dedent
 import os
@@ -16,50 +15,9 @@ from . import __version__
 from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
 
+from .ssh_wrapper import SSHWrapper
+
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
-
-
-class SSHWrapper(ABC):
-    @abstractmethod
-    def exec_command(self, cmd, print_function):
-        '''
-        Args:
-            cmd (string)
-            print_function (lambda)
-
-        Returns:
-            int: exit code
-        '''
-
-    @abstractmethod
-    def connect(self, host):
-        '''
-        Connect to host
-
-        Raises:
-            SSHConnectionError
-        '''
-
-    @abstractmethod
-    def close(self):
-        '''
-        Close connection to host
-        '''
-
-    @abstractmethod
-    def interrupt(self):
-        '''
-        Send SIGINT to halt current execution
-        '''
-
-    @abstractmethod
-    def isconnected(self):
-        '''
-        Connected to host or not
-
-        Returns:
-            bool
-        '''
 
 
 class SSHWrapperParamiko(SSHWrapper):
