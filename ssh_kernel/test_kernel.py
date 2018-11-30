@@ -5,8 +5,8 @@ import io
 import unittest
 
 from .kernel import SSHKernel
-from .kernel import SSHWrapper
-from .kernel import SSHWrapperParamiko
+from .ssh_wrapper import SSHWrapper
+from .ssh_wrapper_paramiko import SSHWrapperParamiko
 from ipykernel.kernelbase import Kernel
 import paramiko
 from ssh_kernel import SSHException
