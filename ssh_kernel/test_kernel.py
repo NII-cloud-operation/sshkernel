@@ -164,6 +164,7 @@ class SSHKernelTest(unittest.TestCase):
         )
 
 
+@unittest.skip('Replace to SSHWrapperPlumbum')
 class SSHWrapperParamikoTest(unittest.TestCase):
 
     def setUp(self):
