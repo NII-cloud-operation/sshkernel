@@ -78,6 +78,16 @@ echo {marker}env: $(cat -v <(env -0))
         if self._remote:
             self.close()
 
+        remote = self._build_remote(host)
+
+        envdelta = {'PAGER': 'cat'}
+        remote.env.update(envdelta)
+
+        self._remote = remote
+        self._connected = True
+        self._host = host
+
+    def _build_remote(self, host):
         (hostname, lookup) = self._init_ssh_config('~/.ssh/config', host)
 
         print('[DEBUG] host={host} hostname={hostname} other_conf={other_conf}'.format(
@@ -87,12 +97,8 @@ echo {marker}env: $(cat -v <(env -0))
         ))
 
         remote = ParamikoMachine(hostname, password=None, **lookup)
-        envdelta = {'PAGER': 'cat'}
-        remote.env.update(envdelta)
 
-        self._remote = remote
-        self._connected = True
-        self._host = host
+        return remote
 
     def close(self):
         self._connected = False
