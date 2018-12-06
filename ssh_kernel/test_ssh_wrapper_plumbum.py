@@ -69,6 +69,12 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
         ret = self.instance.exec_command('yo', print_mock)
 
+    def test_exec_command_return_exit_code(self):
+        print_mock = Mock()
+
+        code = self.instance.exec_command('ls', print_mock)
+
+        self.assertIsInstance(code, int)
 
     def test_close_should_delegate(self):
         mock = Mock()
