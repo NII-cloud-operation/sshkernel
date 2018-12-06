@@ -42,18 +42,33 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
         with self.assertRaises(socket.gaierror):
             self.instance.connect("dummy")
 
+    def test_connect_updates_attributes(self):
+        remote_double = Mock()
+        self.instance._build_remote = Mock(return_value=remote_double)
+        dummy = 'dummy'
+        #self.assertIsNone(self.instance._remote)
+        self.assertFalse(self.instance._connected)
+        self.assertEqual(self.instance._host, '')
+
+        self.instance.connect(dummy)
+
+        self.assertTrue(self.instance._connected)
+        self.assertEqual(self.instance._host, dummy)
+        remote_double.env.update.assert_called()
+
     @unittest.skip('fix setUp')
     def test_exec_command_returns_error_at_first(self):
+        print_mock = Mock()
         with self.assertRaises(socket.gaierror):
             self.instance.exec_command('yo', lambda line: None)
 
-    @unittest.skip("fixing connect")
+    @unittest.skip
     def test_exec_command_returns_stream(self):
         self.instance.connect('myserver')
-        ret = self.instance.exec_command('yo')
+        print_mock = Mock()
 
-        for meth in ['read', 'readline', 'readlines']:
-            self.assertIn(meth, dir(ret))
+        ret = self.instance.exec_command('yo', print_mock)
+
 
     def test_close_should_delegate(self):
         mock = Mock()
