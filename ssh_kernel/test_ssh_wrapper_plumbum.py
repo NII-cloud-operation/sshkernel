@@ -111,3 +111,16 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
                 set(lookup.keys()),
                 set(['user', 'port', 'keyfile'])
             )
+
+    def test_append_command(self):
+        cmd = '''
+ls
+ls
+yo
+'''
+        marker = 'THISISMARKER'
+
+        full_command = self.instance._append_command(cmd, marker)
+
+        self.assertIsInstance(full_command, str)
+        self.assertEqual(full_command.count(marker), 3)
