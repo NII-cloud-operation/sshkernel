@@ -1,6 +1,8 @@
+import os
 import time
 import yaml
 
+import paramiko
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
 from .ssh_wrapper import SSHWrapper
@@ -76,7 +78,15 @@ echo {marker}env: $(cat -v <(env -0))
         if self._remote:
             self.close()
 
-        remote = ParamikoMachine(host, load_system_ssh_config=True)
+        (hostname, lookup) = self._init_ssh_config('~/.ssh/config', host)
+
+        print('[DEBUG] host={host} hostname={hostname} other_conf={other_conf}'.format(
+            host=host,
+            hostname=hostname,
+            other_conf=lookup,
+        ))
+
+        remote = ParamikoMachine(hostname, password=None, **lookup)
         envdelta = {'PAGER': 'cat'}
         remote.env.update(envdelta)
 
@@ -126,3 +136,33 @@ echo {marker}env: $(cat -v <(env -0))
             kv.split('=', 1) for kv in newenv.split(delimiter) if kv
         ])
         self._remote.env.update(parsed_newenv)
+
+    def _init_ssh_config(self, filename, host):
+        supported_fields = [
+            'user',
+            'port',
+            'keyfile',
+        ]
+        conf = paramiko.config.SSHConfig()
+        expanded_path = os.path.expanduser(filename)
+
+        if os.path.exists(expanded_path):
+            with open(expanded_path) as ssh_config:
+                conf.parse(ssh_config)
+
+        lookup = conf.lookup(host)
+
+        if 'hostname' in lookup:
+            hostname = lookup.pop('hostname')
+        else:
+            hostname = host
+
+        if 'identityfile' in lookup:
+            lookup['keyfile'] = lookup.pop('identityfile')
+        if 'port' in lookup:
+            lookup['port'] = int(lookup.pop('port'))
+
+        keys_filtered = set(supported_fields) & set(lookup.keys())
+        lookup_filtered = dict((k, lookup[k]) for k in keys_filtered)
+
+        return (hostname, lookup_filtered)
