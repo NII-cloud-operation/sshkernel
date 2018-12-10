@@ -131,10 +131,13 @@ echo {marker}env: $(cat -v <(env -0))
             return 1
 
     def update_workdir(self, newdir):
-        cwd = self._remote.cwd.getpath()._path
+        cwd = self.get_cwd()
         if newdir != cwd:
             self._remote.cwd.chdir(newdir)
             print('[DEBUG] new cwd: {}'.format(newdir))
+
+    def get_cwd(self):
+        return self._remote.cwd.getpath()._path
 
     def update_env(self, newenv):
         delimiter = '^@'
