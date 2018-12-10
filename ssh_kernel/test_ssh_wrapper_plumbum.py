@@ -1,17 +1,19 @@
 from textwrap import dedent
 from unittest.mock import Mock
 from unittest.mock import PropertyMock
+from unittest.mock import patch
 import io
 import socket
 import unittest
 
 import paramiko
+import plumbum
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
 from .ssh_wrapper import SSHWrapper
-from .ssh_wrapper_plumbum import SSHWrapperPlumbum
 from ssh_kernel import ExceptionWrapper
 from ssh_kernel import SSHException
+from ssh_kernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
 
@@ -145,3 +147,27 @@ yo
 
         self.assertIsInstance(full_command, str)
         self.assertEqual(full_command.count(marker), 3)
+
+    @unittest.skip('Fail to patch plumbum')
+    @patch('ssh_kernel.ssh_wrapper_plumbum.SSHWrapperPlumbum.get_cwd', return_value='/tmp')
+    @patch('plumbum.machines.paramiko_machine.ParamikoMachine.cwd.getpath._path', return_value='/home')
+    def test_update_workdir(self, mock1, mock2):
+        mock = Mock()#return_value='/')
+        self.instance.get_cwd = mock
+        self.instance._remote = mock
+        newdir = '/some/where'
+
+        self.instance.update_workdir(newdir)
+
+        mock.assert_called_once()
+
+    @unittest.skip('Fail to patch the instance created in setUp()')
+    def test_post_exec(self, env_mock):
+        self.instance._remote.env = env_mock
+        env_out = '''code: 255
+env: A=1^@B=2^@TOKEN=AAAA9B==
+pwd: /some/where
+'''
+
+        code = self.instance.post_exec_command(env_out)
+        self.assertEqual(255, code)
