@@ -48,7 +48,7 @@ echo {marker}env: $(cat -v <(env -0))
             plumbum.commands.processes.ProcessExecutionError: If exit_code is 0
         '''
 
-        print_function('[INFO] host = {}\n'.format(self._host))
+        print_function('[INFO] host = {}, cwd = {}\n'.format(self._host, self.get_cwd()))
 
         timeout = None
 
