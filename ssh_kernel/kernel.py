@@ -13,7 +13,7 @@ from metakernel import MetaKernel
 from . import __version__
 from .exception import SSHKernelNotConnectedException
 from .magics import register_magics
-from .ssh_wrapper_paramiko import SSHWrapperParamiko
+from .ssh_wrapper_plumbum import SSHWrapperPlumbum
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -69,7 +69,7 @@ class SSHKernel(MetaKernel):
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
         self.redirect_to_log = True
-        self._sshwrapper = SSHWrapperParamiko()
+        self._sshwrapper = SSHWrapperPlumbum()
 
     def reload_magics(self):
         super().reload_magics()

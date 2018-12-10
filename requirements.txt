@@ -3,3 +3,5 @@ ipython>=7.0.0
 jupyter_client>=5.2.0
 metakernel>=0.20.0
 paramiko==2.4.*
+plumbum
+PyYAML

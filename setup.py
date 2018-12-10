@@ -11,7 +11,7 @@ with open('ssh_kernel/__init__.py', 'rt', encoding='utf8') as f:
 
 
 def _requirements():
-    return [name.rstrip() for name in open('requirements.txt').readlines()]
+    return [name for name in open('requirements.txt').readlines()]
 
 
 setup(
