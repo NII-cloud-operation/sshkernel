@@ -114,28 +114,23 @@ class SSHKernel(MetaKernel):
         code = info['line']
         cursor_pos = info['column']
 
+        default = []
+
         try:
             self.assert_connected()
         except SSHKernelNotConnectedException as e:
             # TODO: Error() in `do_complete` not shown in notebook
             self.log.error('not connected')
-
-            content = {
-                'matches': [],
-                'metadata': {},
-                'status': 'ok',
-            }
-            return content
+            return default
 
         code = code[:cursor_pos]
-        matches = []
 
         if not code or code[-1] == ' ':
-            return matches
+            return default
 
         tokens = code.replace(';', ' ').split()
         if not tokens:
-            return matches
+            return default
 
         token = tokens[-1]
         start = cursor_pos - len(token)
