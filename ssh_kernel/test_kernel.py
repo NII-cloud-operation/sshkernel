@@ -9,6 +9,7 @@ from .ssh_wrapper import SSHWrapper
 from ipykernel.kernelbase import Kernel
 from ssh_kernel import SSHException
 from ssh_kernel import ExceptionWrapper
+from ssh_kernel.exception import SSHKernelNotConnectedException
 
 
 class SSHKernelTest(unittest.TestCase):
@@ -102,6 +103,36 @@ class SSHKernelTest(unittest.TestCase):
 
         self.assertIsInstance(msg, str)
         self.instance.sshwrapper.connect.assert_called_once_with(host)
+
+    def test_get_completions_should_return_empty_array_not_connected(self):
+        connected_double = Mock(side_effect=SSHKernelNotConnectedException)
+
+        self.instance.assert_connected = connected_double
+        info = dict(
+            line='',
+            column=0,
+        )
+
+        matches = self.instance.get_completions(info)
+
+        connected_double.assert_called_once()
+        self.assertEqual(matches, [])
+
+    def test_get_completions_should_return_empty_array_with_empty_string(self):
+        for line in ['', 'trailingspace ', ';  ;;']:
+            connected_double = Mock(return_value=True)
+            self.instance.assert_connected = connected_double
+            info = dict(
+                line=line,
+                column=len(line),
+            )
+
+            matches = self.instance.get_completions(info)
+
+            connected_double.assert_called_once()
+            self.assertEqual(matches, [])
+
+
 
     def check_completion(self, result):
         self.assertIsInstance(result, dict)
