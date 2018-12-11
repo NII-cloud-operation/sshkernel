@@ -99,8 +99,9 @@ class SSHKernel(MetaKernel):
 
         except KeyboardInterrupt:
             self.Error('* interrupt...')
-            #
-            # FIXME: sendintr
+
+            # TODO: Handle exception
+            self.sshwrapper.interrupt()
 
             self.Error(traceback.format_exc())
 
