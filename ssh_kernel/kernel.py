@@ -109,7 +109,11 @@ class SSHKernel(MetaKernel):
             return ExceptionWrapper(ename, evalue, tb)
 
     # Implement base class method
-    def do_complete(self, code, cursor_pos):
+    def get_completions(self, info):
+        # info: Dict = self.parse_code(code, 0, cursor_pos)
+        code = info['line']
+        cursor_pos = info['column']
+
         try:
             self.assert_connected()
         except SSHKernelNotConnectedException as e:
@@ -124,18 +128,15 @@ class SSHKernel(MetaKernel):
             return content
 
         code = code[:cursor_pos]
-        default = {'matches': [], 'cursor_start': 0,
-                   'cursor_end': cursor_pos, 'metadata': dict(),
-                   'status': 'ok'}
+        matches = []
 
         if not code or code[-1] == ' ':
-            return default
+            return matches
 
         tokens = code.replace(';', ' ').split()
         if not tokens:
-            return default
+            return matches
 
-        matches = []
         token = tokens[-1]
         start = cursor_pos - len(token)
 
@@ -157,13 +158,9 @@ class SSHKernel(MetaKernel):
             callback = lambda line: matches.add(line.rstrip())
             self.sshwrapper.exec_command(cmd, callback)
 
-        if not matches:
-            return default
         matches = [m for m in matches if m.startswith(token)]
 
-        return {'matches': sorted(matches), 'cursor_start': start,
-                'cursor_end': cursor_pos, 'metadata': dict(),
-                'status': 'ok'}
+        return matches
 
     def restart_kernel(self):
         self.Print('[ssh] Restart kernel: Closing connection...')
