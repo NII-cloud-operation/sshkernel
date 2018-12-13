@@ -49,7 +49,7 @@ class SSHKernel(MetaKernel):
 
     @sshwrapper.setter
     def sshwrapper(self, value):
-        self._ssh_wrapper = value
+        self._sshwrapper = value
 
     def get_usage(self):
         return dedent('''Usage:
