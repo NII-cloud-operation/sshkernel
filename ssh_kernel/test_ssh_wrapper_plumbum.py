@@ -171,3 +171,22 @@ pwd: /some/where
 
         code = self.instance.post_exec_command(env_out)
         self.assertEqual(255, code)
+
+    @patch('ssh_kernel.ssh_wrapper_plumbum.SSHWrapperPlumbum')
+    def test__update_interrupt_function(self, proc):
+        fn_before = self.instance.interrupt_function
+        self.instance._update_interrupt_function(proc)
+        fn_after = self.instance.interrupt_function
+
+        self.assertTrue(callable(fn_before))
+        self.assertTrue(callable(fn_after))
+        self.assertNotEqual(fn_before, fn_after)
+
+    @patch('ssh_kernel.ssh_wrapper_plumbum.SSHWrapperPlumbum')
+    def test__update_interrupt_function_inject_proc_to_closure(self, proc):
+        self.instance._update_interrupt_function(proc)
+        fn_after = self.instance.interrupt_function
+
+        proc.close.assert_not_called()
+        fn_after()
+        proc.close.assert_called_once()

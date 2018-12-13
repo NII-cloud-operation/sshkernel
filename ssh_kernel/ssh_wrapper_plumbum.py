@@ -17,6 +17,7 @@ class SSHWrapperPlumbum(SSHWrapper):
         self._remote = None
         self._connected = False
         self._host = ''
+        self.interrupt_function = lambda: None
 
     def _append_command(self, cmd, marker):
         '''
@@ -55,10 +56,13 @@ echo {marker}env: $(cat -v <(env -0))
         marker = str(time.time())
         full_command = self._append_command(cmd, marker)
 
-        iterator = self._remote['bash'][
+        proc = self._remote['bash'][
             '-c',
             full_command,
-        ].popen().iter_lines()
+        ].popen()
+        self._update_interrupt_function(proc)
+
+        iterator = proc.iter_lines()
 
         env_out = ''
         for (out, err) in iterator:
@@ -107,12 +111,18 @@ echo {marker}env: $(cat -v <(env -0))
             self._remote.close()
 
     def interrupt(self):
-        pass
+        self.interrupt_function()
 
     def isconnected(self):
         return self._connected
 
     # private methods
+    def _update_interrupt_function(self, proc):
+        def to_interrupt():
+            proc.close()
+
+        self.interrupt_function = to_interrupt
+
     def post_exec_command(self, env_out):
         '''Receive yaml string, update instance state with its value
 
