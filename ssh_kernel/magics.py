@@ -19,6 +19,7 @@ class SSHKernelMagics(Magic):
             %login myserver
         """
 
+        self.kernel.new_ssh_wrapper()
         self.kernel.Print('[ssh] Login to {}...'.format(host))
 
         try:
