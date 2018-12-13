@@ -2,6 +2,7 @@ image: python:latest
 
 stages:
   - test
+  - coverage
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -33,3 +34,15 @@ python37:
   image: python:3.7
   stage: test
   script: tox -e py37
+
+cover37:
+  image: python:3.7
+  stage: coverage
+  script:
+    - coverage run --source ssh_kernel -m unittest
+    - coverage html
+    - coverage report
+  artifacts:
+    paths:
+    - htmlcov
+    expire_in: 1 month
