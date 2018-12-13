@@ -60,7 +60,7 @@ echo {marker}env: $(cat -v <(env -0))
             '-c',
             full_command,
         ].popen()
-        self.update_interrupt_function(proc)
+        self._update_interrupt_function(proc)
 
         iterator = proc.iter_lines()
 
@@ -117,7 +117,7 @@ echo {marker}env: $(cat -v <(env -0))
         return self._connected
 
     # private methods
-    def update_interrupt_function(self, proc):
+    def _update_interrupt_function(self, proc):
         def to_interrupt():
             proc.close()
 
