@@ -1,6 +1,7 @@
 from textwrap import dedent
 from unittest.mock import Mock
 from unittest.mock import PropertyMock
+from unittest.mock import patch
 import io
 import unittest
 
@@ -88,12 +89,10 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.sshwrapper.isconnected.assert_called_once_with()
         self.assertIsInstance(err, ExceptionWrapper)
 
-
     def test_restart_kernel_should_call_close(self):
         self.instance.restart_kernel()
 
         self.instance.sshwrapper.close.assert_called_once_with()
-
 
     @unittest.skip("Moving to test_magic.py")
     def test_login_magic(self):
@@ -131,8 +130,6 @@ class SSHKernelTest(unittest.TestCase):
 
             connected_double.assert_called_once()
             self.assertEqual(matches, [])
-
-
 
     def check_completion(self, result):
         self.assertIsInstance(result, dict)
@@ -191,3 +188,25 @@ class SSHKernelTest(unittest.TestCase):
             res['matches'],
             ['ls', 'lslogins', 'lspcmcia']
         )
+
+    def test_sshwrapper_setter(self):
+        self.instance._sshwrapper = 42
+
+        self.assertEqual(self.instance._sshwrapper, 42)
+
+    def test_new_ssh_wrapper(self):
+        self.assertIsNone(self.instance._sshwrapper)
+
+        self.instance.new_ssh_wrapper()
+
+        self.assertIsInstance(self.instance._sshwrapper, SSHWrapper)
+
+    def test_new_ssh_wrapper_call_close_if_old_instance_exist(self):
+        with patch.object(self.instance, '_sshwrapper') as wrapper_double:
+            self.instance.new_ssh_wrapper()
+            wrapper_double.close.assert_called_once()
+
+            self.instance.new_ssh_wrapper()
+
+            wrapper_double.close.assert_called_once()  # not called anymore
+            self.assertNotEqual(self.instance._sshwrapper, wrapper_double)

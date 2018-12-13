@@ -102,7 +102,9 @@ echo {marker}env: $(cat -v <(env -0))
 
     def close(self):
         self._connected = False
-        self._remote.close()
+
+        if self._remote:
+            self._remote.close()
 
     def interrupt(self):
         pass

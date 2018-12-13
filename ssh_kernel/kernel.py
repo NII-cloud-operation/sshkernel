@@ -49,7 +49,7 @@ class SSHKernel(MetaKernel):
 
     @sshwrapper.setter
     def sshwrapper(self, value):
-        self._ssh_wrapper = value
+        self._sshwrapper = value
 
     def get_usage(self):
         return dedent('''Usage:
@@ -69,6 +69,17 @@ class SSHKernel(MetaKernel):
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
         self.redirect_to_log = True
+        self._sshwrapper = None
+
+    def new_ssh_wrapper(self):
+        '''
+        Instanciate wrapper instance
+
+        Call close() if exist.
+        '''
+        if self._sshwrapper:
+            self._sshwrapper.close()
+
         self._sshwrapper = SSHWrapperPlumbum()
 
     def reload_magics(self):
