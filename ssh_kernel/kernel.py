@@ -78,9 +78,9 @@ class SSHKernel(MetaKernel):
         Call close() if exist.
         '''
         if self._sshwrapper:
-            self.sshwrapper.close()
+            self._sshwrapper.close()
 
-        self.sshwrapper = SSHWrapperPlumbum()
+        self._sshwrapper = SSHWrapperPlumbum()
 
     def reload_magics(self):
         super().reload_magics()
