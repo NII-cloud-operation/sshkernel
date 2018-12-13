@@ -69,7 +69,18 @@ class SSHKernel(MetaKernel):
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
         self.redirect_to_log = True
-        self._sshwrapper = SSHWrapperPlumbum()
+        self._sshwrapper = None
+
+    def new_ssh_wrapper(self):
+        '''
+        Instanciate wrapper instance
+
+        Call close() if exist.
+        '''
+        if self._sshwrapper:
+            self.sshwrapper.close()
+
+        self.sshwrapper = SSHWrapperPlumbum()
 
     def reload_magics(self):
         super().reload_magics()
