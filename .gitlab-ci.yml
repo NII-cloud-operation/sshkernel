@@ -19,10 +19,16 @@ cache:
     - .cache/pip
     - venv/
 
+#
+# Use venv to test instruction in README
+#
 before_script:
+  - which python
   - python -V
   - python -mvenv venv
   - source venv/bin/activate
+  - which python
+  - python -V
   - pip install .[dev]
 
 python36:
