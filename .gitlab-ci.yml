@@ -1,5 +1,11 @@
 image: python:latest
 
+services:
+  - alias: ubuntu18
+    name: rastasheep/ubuntu-sshd:18.04
+  - alias: centos7
+    name: indigodatacloud/centos-sshd:7
+
 stages:
   - test
   - coverage
