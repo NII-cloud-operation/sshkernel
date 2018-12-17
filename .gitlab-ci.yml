@@ -9,6 +9,7 @@ services:
 stages:
   - test
   - coverage
+  - medium_test
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -58,3 +59,15 @@ cover37:
     paths:
     - htmlcov
     expire_in: 1 month
+
+run_papermill:
+  image: python:3.7
+  stage: medium_test
+  script:
+    - python ./test/setup.py
+    - pip install papermill
+    - pytest -s ./test/test_sshd_integration.py --disable-pytest-warnings
+  artifacts:
+    paths:
+      - ./test/out
+    expire_in: 1 week
