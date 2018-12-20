@@ -17,7 +17,7 @@ class SSHKernelTest(unittest.TestCase):
 
     def setUp(self):
         self.instance = SSHKernel()
-        type(self.instance).sshwrapper = PropertyMock(return_value=Mock(spec=SSHWrapper))
+        # type(self.instance).sshwrapper = PropertyMock(return_value=Mock(spec=SSHWrapper))
         self.instance.Error = Mock()
         self.instance.Print = Mock()
         self.instance.Write = Mock()
@@ -25,14 +25,7 @@ class SSHKernelTest(unittest.TestCase):
     def test_new(self):
         self.assertIsInstance(self.instance, Kernel)
         self.assertIsInstance(self.instance, SSHKernel)
-        self.assertIsInstance(self.instance.sshwrapper, SSHWrapper)
-
-    def test_property_mock_returns_sshwrapper_mock(self):
-        ''' test for mock '''
-        self.assertIsInstance(self.instance.sshwrapper, SSHWrapper)
-
-        with self.assertRaises(AttributeError):
-            self.instance.sshwrapper.nomethod()
+        self.assertIsNone(self.instance.sshwrapper)
 
     def test_impl(self):
         self.assertEqual(self.instance.implementation, 'ssh_kernel')
@@ -44,16 +37,22 @@ class SSHKernelTest(unittest.TestCase):
         cmd = 'date'
         cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
         print_function = Mock()
-        self.instance.sshwrapper.exec_command = Mock(return_value=0)
 
-        self.assertEqual(0, self.instance.sshwrapper.exec_command())
+        with patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock) as wrapper_double:
+    #       type(self.instance).sshwrapper = Mock()
+    #        self.instance.new_ssh_wrapper()
+            self.instance.sshwrapper.exec_command = Mock(return_value=0)
 
-        err = self.instance.do_execute_direct(cmd, print_function)
+            self.assertEqual(0, self.instance.sshwrapper.exec_command())
 
-        self.assertIsNone(err)
-        self.instance.sshwrapper.exec_command.assert_called()
+            err = self.instance.do_execute_direct(cmd, print_function)
+
+            self.assertIsNone(err)
+            self.instance.sshwrapper.exec_command.assert_called()
 
     def test_exec_with_error_exit_code_should_return_exception(self):
+        self.instance.new_ssh_wrapper()
+        self.instance.assert_connected = Mock()
         self.instance.sshwrapper.exec_command = Mock(return_value=1)
 
         err = self.instance.do_execute_direct('sl')
@@ -62,6 +61,7 @@ class SSHKernelTest(unittest.TestCase):
         self.assertEqual(err.evalue, '1')
 
     def test_exec_with_exception_should_return_exception(self):
+        self.instance.new_ssh_wrapper()
         self.instance.sshwrapper.exec_command = Mock(side_effect=SSHException("boom"))
 
         err = self.instance.do_execute_direct('sl')
@@ -69,6 +69,7 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsInstance(err, ExceptionWrapper)
 
     def test_exec_with_interrupt_should_return_exception(self):
+        self.instance.new_ssh_wrapper()
         self.instance.sshwrapper.exec_command = Mock(side_effect=KeyboardInterrupt())
 
         err = self.instance.do_execute_direct('sleep 10000')
@@ -83,16 +84,21 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.Error.assert_called()
 
     def test_exec_without_connected_should_return_exception(self):
+        self.instance.new_ssh_wrapper()
         self.instance.sshwrapper.isconnected = Mock(return_value=False)
         err = self.instance.do_execute_direct('echo Before connect')
 
         self.instance.sshwrapper.isconnected.assert_called_once_with()
         self.assertIsInstance(err, ExceptionWrapper)
 
-    def test_restart_kernel_should_call_close(self):
+    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    def test_restart_kernel_should_call_close(self, prop):
+        wrapper_double = Mock()
+        prop.return_value = wrapper_double
+
         self.instance.restart_kernel()
 
-        self.instance.sshwrapper.close.assert_called_once_with()
+        wrapper_double.close.assert_called_once()
 
     @unittest.skip("Moving to test_magic.py")
     def test_login_magic(self):
@@ -140,7 +146,8 @@ class SSHKernelTest(unittest.TestCase):
         self.assertEqual(matches, sorted(matches))
         self.assertEqual(matches, [e.rstrip() for e in matches])
 
-    def test_complete_bash_variables(self):
+    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    def test_complete_bash_variables(self, mock):
         def exec_double(cmd, callback):
             result = dedent(
                 """\
@@ -166,7 +173,8 @@ class SSHKernelTest(unittest.TestCase):
             ['$BASH_ARGC', '$BASH_ARGV', '$BASH_LINENO', '$BASH_REMATCH']
         )
 
-    def test_complete_bash_commands(self):
+    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    def test_complete_bash_commands(self, mock):
         def exec_double(cmd, callback):
             result = dedent(
                 """\
@@ -179,6 +187,7 @@ class SSHKernelTest(unittest.TestCase):
                 callback(line)
             return 0
 
+        # Replace with double without Mock()
         self.instance.sshwrapper.exec_command = exec_double
 
         res = self.instance.do_complete('ls', 3)
@@ -190,23 +199,31 @@ class SSHKernelTest(unittest.TestCase):
         )
 
     def test_sshwrapper_setter(self):
-        self.instance._sshwrapper = 42
+        self.assertIsNone(self.instance.sshwrapper)
+        self.assertIsNone(self.instance._sshwrapper)
+
+        self.instance.sshwrapper = 42
 
         self.assertEqual(self.instance._sshwrapper, 42)
 
     def test_new_ssh_wrapper(self):
-        self.assertIsNone(self.instance._sshwrapper)
+        # Intanciate outside setUp()
+        kernel = SSHKernel()
+        kernel.Write = Mock()
+
+        self.assertIsNone(kernel.sshwrapper)
+        self.assertIsNone(kernel._sshwrapper)
+
+        kernel.new_ssh_wrapper()
+
+        self.assertIsNotNone(kernel._sshwrapper)
+        self.assertIsInstance(kernel._sshwrapper, SSHWrapper)
+
+    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    def test_new_ssh_wrapper_call_close_if_old_instance_exist(self, prop):
+        wrapper_double = Mock()
+        prop.return_value = wrapper_double
 
         self.instance.new_ssh_wrapper()
 
-        self.assertIsInstance(self.instance._sshwrapper, SSHWrapper)
-
-    def test_new_ssh_wrapper_call_close_if_old_instance_exist(self):
-        with patch.object(self.instance, '_sshwrapper') as wrapper_double:
-            self.instance.new_ssh_wrapper()
-            wrapper_double.close.assert_called_once()
-
-            self.instance.new_ssh_wrapper()
-
-            wrapper_double.close.assert_called_once()  # not called anymore
-            self.assertNotEqual(self.instance._sshwrapper, wrapper_double)
+        wrapper_double.close.assert_called_once()

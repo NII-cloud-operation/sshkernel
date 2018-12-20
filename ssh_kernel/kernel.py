@@ -77,10 +77,23 @@ class SSHKernel(MetaKernel):
 
         Call close() if exist.
         '''
-        if self._sshwrapper:
-            self._sshwrapper.close()
 
-        self._sshwrapper = SSHWrapperPlumbum()
+        self.del_ssh_wrapper()
+
+        self.sshwrapper = SSHWrapperPlumbum()
+
+    def del_ssh_wrapper(self):
+        '''
+        Gracefully delete wrapper instance
+        '''
+
+        if self.sshwrapper:
+            self.Print('[INFO] Closing existing connection.')
+
+            # TODO: error handling
+            self.sshwrapper.close()
+
+        self.sshwrapper = None
 
     def reload_magics(self):
         super().reload_magics()
@@ -170,14 +183,19 @@ class SSHKernel(MetaKernel):
         return matches
 
     def restart_kernel(self):
-        self.Print('[ssh] Restart kernel: Closing connection...')
-        self.sshwrapper.close()
+        # TODO: log message
+        # self.Print('[INFO] Restart ssh_kernel ...')
+
+        self.del_ssh_wrapper()
 
     def assert_connected(self):
         '''
         Assert client is connected.
         '''
 
-        if not self.sshwrapper.isconnected():
-            self.Error('[ssh] Not connected')
+        if self.sshwrapper is None:
+            self.Error('[ERROR] Not logged in.')
+            raise SSHKernelNotConnectedException
+        elif not self.sshwrapper.isconnected():
+            self.Error('[ERROR] Not connected.')
             raise SSHKernelNotConnectedException
