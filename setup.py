@@ -24,6 +24,7 @@ setup(
         'dev': [
             'coverage',
             'pytest>=3',
+            'pytest-watch',
             'tox',
         ],
     },
