@@ -22,8 +22,9 @@ setup(
     description="SSH Kernel",
     extras_require={
         'dev': [
-            'pytest>=3',
             'coverage',
+            'pytest>=3',
+            'pytest-watch',
             'tox',
         ],
     },
