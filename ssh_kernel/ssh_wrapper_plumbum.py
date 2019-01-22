@@ -3,6 +3,7 @@ import time
 import yaml
 
 import paramiko
+from plumbum.commands.base import shquote
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
 from .ssh_wrapper import SSHWrapper
@@ -29,6 +30,7 @@ class SSHWrapperPlumbum(SSHWrapper):
         header = ''
         footer = '''
 EXIT_CODE=$?
+echo
 echo {marker}code: $EXIT_CODE
 echo {marker}pwd: $(pwd)
 echo {marker}env: $(cat -v <(env -0))
@@ -156,7 +158,16 @@ echo {marker}env: $(cat -v <(env -0))
         parsed_newenv = dict([
             kv.split('=', 1) for kv in newenv.split(delimiter) if kv
         ])
-        self._remote.env.update(parsed_newenv)
+
+        #
+        # Although RemoteEnv.update() calls shquote() internally,
+        # it is ignored with ParamikoMachine.
+        # So I quote manually here.
+        quoted_newenv = dict([
+            (k, shquote(v)) for k,v in parsed_newenv.items()
+        ])
+
+        self._remote.env.update(quoted_newenv)
 
     def _init_ssh_config(self, filename, host):
         supported_fields = [
