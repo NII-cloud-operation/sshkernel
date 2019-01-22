@@ -28,3 +28,13 @@ class MagicTest(unittest.TestCase):
         self.instance.line_logout()
 
         self.kernel.sshwrapper.close.assert_called_once_with()
+
+    def test_login_without_host_raise_type_exception(self):
+        with self.assertRaises(TypeError):
+            self.instance.line_login()
+
+    def test_login_set_retval_none(self):
+        noreturn = self.instance.line_login('dummy')
+
+        self.assertIsNone(noreturn)
+        self.assertIsNone(self.instance.retval)
