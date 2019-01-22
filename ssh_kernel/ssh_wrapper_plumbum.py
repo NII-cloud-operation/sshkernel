@@ -29,6 +29,7 @@ class SSHWrapperPlumbum(SSHWrapper):
         header = ''
         footer = '''
 EXIT_CODE=$?
+echo
 echo {marker}code: $EXIT_CODE
 echo {marker}pwd: $(pwd)
 echo {marker}env: $(cat -v <(env -0))
