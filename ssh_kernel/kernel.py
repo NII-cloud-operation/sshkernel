@@ -88,7 +88,7 @@ class SSHKernel(MetaKernel):
         '''
 
         if self.sshwrapper:
-            self.Print('[INFO] Closing existing connection.')
+            self.Print('[ssh] Closing existing connection.')
 
             # TODO: error handling
             self.sshwrapper.close()
@@ -194,8 +194,8 @@ class SSHKernel(MetaKernel):
         '''
 
         if self.sshwrapper is None:
-            self.Error('[ERROR] Not logged in.')
+            self.Error('[ssh] Not logged in.')
             raise SSHKernelNotConnectedException
         elif not self.sshwrapper.isconnected():
-            self.Error('[ERROR] Not connected.')
+            self.Error('[ssh] Not connected.')
             raise SSHKernelNotConnectedException

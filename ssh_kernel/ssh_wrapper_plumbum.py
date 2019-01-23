@@ -51,7 +51,7 @@ echo {marker}env: $(cat -v <(env -0))
             plumbum.commands.processes.ProcessExecutionError: If exit_code is 0
         '''
 
-        print_function('[INFO] host = {}, cwd = {}\n'.format(self._host, self.get_cwd()))
+        print_function('[ssh] host = {}, cwd = {}\n'.format(self._host, self.get_cwd()))
 
         timeout = None
 
@@ -96,7 +96,7 @@ echo {marker}env: $(cat -v <(env -0))
     def _build_remote(self, host):
         (hostname, lookup) = self._init_ssh_config('~/.ssh/config', host)
 
-        print('[DEBUG] host={host} hostname={hostname} other_conf={other_conf}'.format(
+        print('[ssh] host={host} hostname={hostname} other_conf={other_conf}'.format(
             host=host,
             hostname=hostname,
             other_conf=lookup,
@@ -141,14 +141,14 @@ echo {marker}env: $(cat -v <(env -0))
         if 'code' in env_at_footer:
             return env_at_footer['code']
         else:
-            print('[ERROR] Cannot parse exit_code. As a result, returing code=1')
+            print('[ssh] Error: Cannot parse exit_code. As a result, returing code=1')
             return 1
 
     def update_workdir(self, newdir):
         cwd = self.get_cwd()
         if newdir != cwd:
             self._remote.cwd.chdir(newdir)
-            print('[DEBUG] new cwd: {}'.format(newdir))
+            print('[ssh] new cwd: {}'.format(newdir))
 
     def get_cwd(self):
         return self._remote.cwd.getpath()._path
