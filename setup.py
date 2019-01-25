@@ -18,7 +18,7 @@ setup(
     name="ssh_kernel",
     version=version,
     author="UENO, Masaru",
-    author_email="m-ueno@users.noreply.github.com",
+    author_email="ueno.masaru@fujitsu.com",
     description="SSH Kernel",
     extras_require={
         'dev': [
@@ -32,15 +32,17 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=_requirements(),
+    license='BSD 3-clause "New" or "Revised License"',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",
     packages=['ssh_kernel'],
     classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
         "Framework :: IPython",
+        "Framework :: Jupyter",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
         "Topic :: System :: Shells",
-        "License :: OSI Approved :: MIT License",
     ],
 )

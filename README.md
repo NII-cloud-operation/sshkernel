@@ -70,4 +70,4 @@ See also a tutorial above in detail.
 
 ## LICENSE
 
-This software is released under the MIT License.
+This software is released under the terms of the Modified BSD License.
