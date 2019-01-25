@@ -26,6 +26,8 @@ setup(
             'pytest>=3',
             'pytest-watch',
             'tox',
+            'twine',
+            'wheel',
         ],
     },
     include_package_data=True,
