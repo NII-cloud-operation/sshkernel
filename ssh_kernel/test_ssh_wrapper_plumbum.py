@@ -11,9 +11,9 @@ import plumbum
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
 from .ssh_wrapper import SSHWrapper
-from ssh_kernel import ExceptionWrapper
-from ssh_kernel import SSHException
-from ssh_kernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
+from sshkernel import ExceptionWrapper
+from sshkernel import SSHException
+from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
 
@@ -149,7 +149,7 @@ yo
         self.assertEqual(full_command.count(marker), 3)
 
     @unittest.skip('Fail to patch plumbum')
-    @patch('ssh_kernel.ssh_wrapper_plumbum.SSHWrapperPlumbum.get_cwd', return_value='/tmp')
+    @patch('sshkernel.ssh_wrapper_plumbum.SSHWrapperPlumbum.get_cwd', return_value='/tmp')
     @patch('plumbum.machines.paramiko_machine.ParamikoMachine.cwd.getpath._path', return_value='/home')
     def test_update_workdir(self, mock1, mock2):
         mock = Mock()#return_value='/')
@@ -172,7 +172,7 @@ pwd: /some/where
         code = self.instance.post_exec_command(env_out)
         self.assertEqual(255, code)
 
-    @patch('ssh_kernel.ssh_wrapper_plumbum.SSHWrapperPlumbum')
+    @patch('sshkernel.ssh_wrapper_plumbum.SSHWrapperPlumbum')
     def test__update_interrupt_function(self, proc):
         fn_before = self.instance.interrupt_function
         self.instance._update_interrupt_function(proc)
@@ -182,7 +182,7 @@ pwd: /some/where
         self.assertTrue(callable(fn_after))
         self.assertNotEqual(fn_before, fn_after)
 
-    @patch('ssh_kernel.ssh_wrapper_plumbum.SSHWrapperPlumbum')
+    @patch('sshkernel.ssh_wrapper_plumbum.SSHWrapperPlumbum')
     def test__update_interrupt_function_inject_proc_to_closure(self, proc):
         self.instance._update_interrupt_function(proc)
         fn_after = self.instance.interrupt_function

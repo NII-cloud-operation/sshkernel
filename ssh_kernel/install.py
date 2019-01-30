@@ -34,7 +34,7 @@ import argparse
 from jupyter_client.kernelspec import KernelSpecManager
 from IPython.utils.tempdir import TemporaryDirectory
 
-kernel_json = {"argv":[sys.executable,"-m","ssh_kernel", "-f", "{connection_file}"],
+kernel_json = {"argv":[sys.executable,"-m","sshkernel", "-f", "{connection_file}"],
  "display_name":"SSH",
  "language":"bash",
  "codemirror_mode":"shell",
