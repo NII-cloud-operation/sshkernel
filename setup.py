@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 
-with open('ssh_kernel/__init__.py', 'rt', encoding='utf8') as f:
+with open('sshkernel/__init__.py', 'rt', encoding='utf8') as f:
     version = re.search(r'__version__ = \'(.*?)\'', f.read()).group(1)
 
 
@@ -38,7 +38,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",
-    packages=['ssh_kernel'],
+    packages=['sshkernel'],
     classifiers=[
         "Framework :: IPython",
         "Framework :: Jupyter",
