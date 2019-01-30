@@ -15,7 +15,7 @@ def _requirements():
 
 
 setup(
-    name="ssh_kernel",
+    name="sshkernel",
     version=version,
     author="UENO, Masaru",
     author_email="ueno.masaru@fujitsu.com",
