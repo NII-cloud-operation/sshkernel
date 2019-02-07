@@ -11,7 +11,9 @@ SSH Kernel for Jupyter notebook.
 
 ```
 pip install -U sshkernel
-python -m sshkernel.install
+python -m sshkernel install [--user]
+# Install a kernel specification directory.
+# Type `python -msshkernel install --help` for more information.
 ```
 
 ## Tutorial (in Japanese)
