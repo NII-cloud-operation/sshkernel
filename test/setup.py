@@ -53,7 +53,7 @@ def check_login(host):
 
 
 def install_sshkernel():
-    cmd = 'python -msshkernel.install'
+    cmd = 'python -msshkernel install'
     print(_run(cmd))
 
 

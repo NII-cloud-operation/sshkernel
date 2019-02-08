@@ -7,6 +7,6 @@ RUN apt-get update \
 
 ADD . /tmp/ssh
 RUN pip install -e /tmp/ssh
-RUN python -msshkernel.install
+RUN python -msshkernel install
 
 USER jovyan

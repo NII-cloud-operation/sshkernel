@@ -2,6 +2,7 @@ from logging import INFO
 from textwrap import dedent
 import os
 import re
+import sys
 import traceback
 
 from ipykernel.kernelbase import Kernel
@@ -24,6 +25,16 @@ class SSHKernel(MetaKernel):
     '''
     implementation = 'sshkernel'
     implementation_version = __version__
+    language = 'bash'
+    language_info = {}
+    kernel_json = {
+        'argv': [sys.executable, '-m', 'sshkernel', '-f', '{connection_file}'],
+        'display_name': 'SSH',
+        'language': 'bash',
+        'codemirror_mode': 'shell',
+        'env': {'PS1': '$'},
+        'name': 'ssh',
+    }
 
     @property
     def language_version(self):

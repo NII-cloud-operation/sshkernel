@@ -1,3 +1,4 @@
-from ipykernel.kernelapp import IPKernelApp
 from .kernel import SSHKernel
-IPKernelApp.launch_instance(kernel_class=SSHKernel)
+
+if __name__ == '__main__':
+    SSHKernel.run_as_main()
