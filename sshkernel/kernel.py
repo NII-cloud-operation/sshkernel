@@ -22,7 +22,7 @@ class SSHKernel(MetaKernel):
     '''
     SSH kernel run commands remotely.
     '''
-    implementation = 'ssh_kernel'
+    implementation = 'sshkernel'
     implementation_version = __version__
 
     @property
@@ -184,7 +184,7 @@ class SSHKernel(MetaKernel):
 
     def restart_kernel(self):
         # TODO: log message
-        # self.Print('[INFO] Restart ssh_kernel ...')
+        # self.Print('[INFO] Restart sshkernel ...')
 
         self.del_ssh_wrapper()
 

@@ -52,8 +52,8 @@ def check_login(host):
     assert 'ok' in buf
 
 
-def install_ssh_kernel():
-    cmd = 'python -mssh_kernel.install'
+def install_sshkernel():
+    cmd = 'python -msshkernel.install'
     print(_run(cmd))
 
 
@@ -76,6 +76,6 @@ def main():
 
         check_login(host)
 
-    install_ssh_kernel()
+    install_sshkernel()
 
 main()

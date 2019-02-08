@@ -6,8 +6,8 @@ from metakernel import Magic
 
 from .magics import SSHKernelMagics
 from .kernel import SSHKernel
-from ssh_kernel import SSHException
-from ssh_kernel import ExceptionWrapper
+from sshkernel import SSHException
+from sshkernel import ExceptionWrapper
 
 
 class MagicTest(unittest.TestCase):

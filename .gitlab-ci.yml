@@ -52,7 +52,7 @@ cover37:
   image: python:3.7
   stage: coverage
   script:
-    - coverage run --source ssh_kernel -m unittest
+    - coverage run --source sshkernel -m unittest
     - coverage html
     - coverage report
   artifacts:

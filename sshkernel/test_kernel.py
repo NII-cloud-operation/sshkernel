@@ -8,9 +8,9 @@ import unittest
 from .kernel import SSHKernel
 from .ssh_wrapper import SSHWrapper
 from ipykernel.kernelbase import Kernel
-from ssh_kernel import SSHException
-from ssh_kernel import ExceptionWrapper
-from ssh_kernel.exception import SSHKernelNotConnectedException
+from sshkernel import SSHException
+from sshkernel import ExceptionWrapper
+from sshkernel.exception import SSHKernelNotConnectedException
 
 
 class SSHKernelTest(unittest.TestCase):
@@ -28,7 +28,7 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsNone(self.instance.sshwrapper)
 
     def test_impl(self):
-        self.assertEqual(self.instance.implementation, 'ssh_kernel')
+        self.assertEqual(self.instance.implementation, 'sshkernel')
 
     def test_banner(self):
         self.assertIn('SSH', self.instance.banner)
@@ -38,7 +38,7 @@ class SSHKernelTest(unittest.TestCase):
         cmd_result = "Sat Oct 27 19:45:46 JST 2018\n"
         print_function = Mock()
 
-        with patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock) as wrapper_double:
+        with patch('sshkernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock) as wrapper_double:
     #       type(self.instance).sshwrapper = Mock()
     #        self.instance.new_ssh_wrapper()
             self.instance.sshwrapper.exec_command = Mock(return_value=0)
@@ -91,7 +91,7 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.sshwrapper.isconnected.assert_called_once_with()
         self.assertIsInstance(err, ExceptionWrapper)
 
-    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    @patch('sshkernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
     def test_restart_kernel_should_call_close(self, prop):
         wrapper_double = Mock()
         prop.return_value = wrapper_double
@@ -146,7 +146,7 @@ class SSHKernelTest(unittest.TestCase):
         self.assertEqual(matches, sorted(matches))
         self.assertEqual(matches, [e.rstrip() for e in matches])
 
-    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    @patch('sshkernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
     def test_complete_bash_variables(self, mock):
         def exec_double(cmd, callback):
             result = dedent(
@@ -173,7 +173,7 @@ class SSHKernelTest(unittest.TestCase):
             ['$BASH_ARGC', '$BASH_ARGV', '$BASH_LINENO', '$BASH_REMATCH']
         )
 
-    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    @patch('sshkernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
     def test_complete_bash_commands(self, mock):
         def exec_double(cmd, callback):
             result = dedent(
@@ -219,7 +219,7 @@ class SSHKernelTest(unittest.TestCase):
         self.assertIsNotNone(kernel._sshwrapper)
         self.assertIsInstance(kernel._sshwrapper, SSHWrapper)
 
-    @patch('ssh_kernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
+    @patch('sshkernel.kernel.SSHKernel.sshwrapper', new_callable=PropertyMock)
     def test_new_ssh_wrapper_call_close_if_old_instance_exist(self, prop):
         wrapper_double = Mock()
         prop.return_value = wrapper_double

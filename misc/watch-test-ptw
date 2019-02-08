@@ -1,1 +1,1 @@
-ptw ssh_kernel -- --disable-pytest-warnings
+ptw sshkernel -- --disable-pytest-warnings

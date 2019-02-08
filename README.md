@@ -1,4 +1,4 @@
-# ssh_kernel
+# sshkernel
 
 SSH Kernel for Jupyter notebook.
 
@@ -10,8 +10,8 @@ SSH Kernel for Jupyter notebook.
 ## Installation
 
 ```
-pip install -e .
-python -m ssh_kernel.install
+pip install -U sshkernel
+python -m sshkernel.install
 ```
 
 ## Tutorial (in Japanese)
