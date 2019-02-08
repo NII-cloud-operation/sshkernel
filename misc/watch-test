@@ -1,8 +1,0 @@
-#!/bin/bash -xe
-
-watchmedo shell-command \
-  --patterns="*.py" \
-  --recursive \
-  --command='python -munittest' \
-#  --command='echo "${watch_src_path}"' \
-  .
