@@ -1,1 +1,6 @@
-env/
+*
+!MANIFEST.in
+!README.md
+!requirements.txt
+!sshkernel/
+!setup.py
