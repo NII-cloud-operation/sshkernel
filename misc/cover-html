@@ -1,1 +1,2 @@
-coverage run --source sshkernel -m unittest ; coverage html --omit env
+coverage run --source sshkernel -m unittest discover tests/unit
+coverage html --omit env
