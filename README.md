@@ -1,8 +1,11 @@
-# sshkernel
+# SSH Kernel
 
-SSH Kernel for Jupyter notebook.
+SSH Kernel is a Jupyter kernel specialized in executing commands remotely
+with [paramiko](http://www.paramiko.org/) SSH client.
 
-## Requirements
+![](doc/screenshot.png)
+
+## Major requirements
 
 * Python3.5+
 * IPython 7.0+
@@ -11,14 +14,23 @@ SSH Kernel for Jupyter notebook.
 
 ```
 pip install -U sshkernel
-python -m sshkernel install [--user]
-# Install a kernel specification directory.
-# Type `python -msshkernel install --help` for more information.
+python -m sshkernel install [--user|--sys-prefix]
+# Type `python -m sshkernel install --help` for more information.
 ```
 
-## Tutorial (in Japanese)
+To uninstall:
 
-* [ssh-kernel-how-to](doc/ssh-kernel-how-to.ipynb)
+```
+jupyter kernelspec remove ssh
+pip uninstall sshkernel
+```
+
+## Getting Started
+
+Basic examples of using SSH Kernel.
+
+* [Getting Started](examples/getting-started.ipynb)
+* [Getting Started (in Japanese)](examples/getting-started-ja.ipynb)
 
 ## Configuration
 
@@ -33,10 +45,10 @@ Possible keywords are as follows:
 
 ### Notes about private keys
 
+* As private key files in `~/.ssh/` are discoverable, you do not necessarily specify `IdentityFile`
 * If you use a ed25519 key, please generate with or convert into old PEM format
     * e.g. `ssh-keygen -m PEM -t ed25519 ...`
     * This is because `paramiko` library doesn't support latest format "RFC4716"
-* As private key files in `~/.ssh/` are discoverable, you do not necessarily specify `IdentityFile`
 
 ### Configuration examples
 
@@ -69,6 +81,14 @@ Minimal example:
 ```
 
 See also a tutorial above in detail.
+
+## Limitations
+
+* As Jupyter Notebook has limitation to handle `stdin`,
+  you may need to change some server configuration and commands to avoid *interactive input*.
+  * e.g. use publickey-authentication instead of password, enable NOPASSWD for sudo, use `expect`
+* Some shell variables are different from normal interactive shell
+  * e.g. `$?`, `$$`
 
 ## LICENSE
 
