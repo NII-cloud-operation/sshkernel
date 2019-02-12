@@ -10,9 +10,9 @@ import paramiko
 import plumbum
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
-from .ssh_wrapper import SSHWrapper
 from sshkernel import ExceptionWrapper
 from sshkernel import SSHException
+from sshkernel.ssh_wrapper import SSHWrapper
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
