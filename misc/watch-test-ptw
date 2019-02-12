@@ -1,1 +1,1 @@
-ptw sshkernel -- --disable-pytest-warnings
+ptw tests/unit -- --disable-pytest-warnings
