@@ -64,10 +64,10 @@ run_papermill:
   image: python:3.7
   stage: medium_test
   script:
-    - python ./test/setup.py
     - pip install papermill
-    - pytest -s ./test/test_sshd_integration.py --disable-pytest-warnings
+    - python ./tests/integration/setup.py
+    - pytest --capture=no --disable-pytest-warnings tests/integration 
   artifacts:
     paths:
-      - ./test/out
-    expire_in: 1 week
+      - ./tests/integration/out
+    expire_in: 1 month
