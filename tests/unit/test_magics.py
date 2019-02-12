@@ -4,10 +4,10 @@ import unittest
 
 from metakernel import Magic
 
-from .magics import SSHKernelMagics
-from .kernel import SSHKernel
-from sshkernel import SSHException
 from sshkernel import ExceptionWrapper
+from sshkernel import SSHException
+from sshkernel.kernel import SSHKernel
+from sshkernel.magics import SSHKernelMagics
 
 
 class MagicTest(unittest.TestCase):

@@ -5,12 +5,12 @@ from unittest.mock import patch
 import io
 import unittest
 
-from .kernel import SSHKernel
-from .ssh_wrapper import SSHWrapper
 from ipykernel.kernelbase import Kernel
-from sshkernel import SSHException
 from sshkernel import ExceptionWrapper
+from sshkernel import SSHException
 from sshkernel.exception import SSHKernelNotConnectedException
+from sshkernel.kernel import SSHKernel
+from sshkernel.ssh_wrapper import SSHWrapper
 
 
 class SSHKernelTest(unittest.TestCase):
