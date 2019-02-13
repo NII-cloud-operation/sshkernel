@@ -93,3 +93,5 @@ See also a tutorial above in detail.
 ## LICENSE
 
 This software is released under the terms of the Modified BSD License.
+
+[Logo](https://commons.wikimedia.org/wiki/File:High-contrast-utilities-terminal.png) from Wikimedia Commons is licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0).
