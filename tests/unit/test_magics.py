@@ -38,3 +38,18 @@ class MagicTest(unittest.TestCase):
 
         self.assertIsNone(noreturn)
         self.assertIsNone(self.instance.retval)
+
+    def test_expand_parameters(self):
+        params = dict(A="1", B="3")
+        s = '{A}2{B}'
+
+        ret = self.instance.expand_parameters(s, params)
+        self.assertEqual(ret, "123")
+
+    def test_expand_parameters_raise(self):
+        with self.assertRaises(KeyError):
+            self.instance.expand_parameters('{NOTFOUND}', {})
+
+    def test_expand_parameters_with_unclosed_string(self):
+        ret = self.instance.expand_parameters('{YO', {})
+        self.assertEqual(ret, '{YO')
