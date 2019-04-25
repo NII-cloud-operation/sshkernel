@@ -1,4 +1,5 @@
 import re
+import sys
 import traceback
 
 from metakernel import ExceptionWrapper
@@ -6,6 +7,8 @@ from metakernel import Magic
 
 
 class SSHKernelMagics(Magic):
+
+    blacklist = re.compile(r'.*([^- %,\./:=_a-zA-Z\d])')
 
     def line_login(self, host):
         """
@@ -79,16 +82,40 @@ class SSHKernelMagics(Magic):
             Out[3]:
             11.11.11.11
         '''
-        self.kernel.set_param(variable, value)
-        self.retval = None
+        try:
+            self.validate_value_string(value)
+            self.kernel.set_param(variable, value)
+        except Exception as exc:
+            # To propagate exception to frontend through metakernel
+            # store ExceptionWrapper instance into retval
+            ex_type, _ex, _tb = sys.exc_info()
+            tb_format = traceback.format_exc().splitlines()
+            self.retval = ExceptionWrapper(ex_type.__name__, repr(exc.args), tb_format)
 
     def expand_parameters(self, string, params):
         pattern = r'\{(.*?)\}'
+
         def repl(match):
             param_name = match.group(1)
             return params[param_name]
 
         return re.sub(pattern, repl, string)
+
+    def validate_value_string(self, val_str):
+        '''Raise if given string contains invalid characters.
+
+        Args:
+            val_str (str)
+
+        Raises:
+            ValueError: If `val_str` matches `self.blacklist`
+        '''
+        m = re.match(self.blacklist, str(val_str))
+        if m:
+            msg = "{val} contains invalid character {matched}. Valid characters are A-Z a-z 0-9 - % , . / : = _".format(
+                val=repr(val_str), matched=repr(m.group(1))
+            )
+            raise ValueError(msg)
 
     def post_process(self, retval):
         return self.retval
