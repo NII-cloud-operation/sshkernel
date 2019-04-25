@@ -53,3 +53,23 @@ class MagicTest(unittest.TestCase):
     def test_expand_parameters_with_unclosed_string(self):
         ret = self.instance.expand_parameters('{YO', {})
         self.assertEqual(ret, '{YO')
+
+    def test_validate_value_string(self):
+        func = self.instance.validate_value_string
+
+        ok_cases = [
+            'abc 123%',
+        ]
+        ng_cases = [
+            'ABC ###',
+            'ABC"',
+            'ABC()',
+            'ABC${}',
+        ]
+
+        for ok in ok_cases:
+            self.assertIsNone(func(ok))
+
+        for ng in ng_cases:
+            with self.assertRaises(ValueError):
+                func(ng)
