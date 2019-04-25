@@ -107,7 +107,7 @@ class SSHKernel(MetaKernel):
 
         self.del_ssh_wrapper()
 
-        self.sshwrapper = SSHWrapperPlumbum()
+        self.sshwrapper = SSHWrapperPlumbum(self.get_params())
 
     def del_ssh_wrapper(self):
         '''
