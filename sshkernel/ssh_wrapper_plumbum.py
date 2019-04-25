@@ -1,3 +1,4 @@
+from types import MappingProxyType
 import os
 import time
 import yaml
@@ -14,7 +15,8 @@ class SSHWrapperPlumbum(SSHWrapper):
     A plumbum remote machine wrapper
     '''
 
-    def __init__(self):
+    def __init__(self, envdelta_init=dict()):
+        self.envdelta_init = MappingProxyType(dict((k, shquote(v)) for k,v in envdelta_init.items()))
         self._remote = None
         self._connected = False
         self._host = ''
@@ -86,7 +88,7 @@ echo {marker}env: $(cat -v <(env -0))
 
         remote = self._build_remote(host)
 
-        envdelta = {'PAGER': 'cat'}
+        envdelta = {**self.envdelta_init, 'PAGER': 'cat'}
         remote.env.update(envdelta)
 
         self._remote = remote
