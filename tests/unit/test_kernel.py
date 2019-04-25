@@ -227,3 +227,8 @@ class SSHKernelTest(unittest.TestCase):
         self.instance.new_ssh_wrapper()
 
         wrapper_double.close.assert_called_once()
+
+    def test_params(self):
+        self.assertEqual(dict(), self.instance.get_params())
+        self.instance.set_param('KEY1', 'VALUE1')
+        self.assertEqual({'KEY1': 'VALUE1'}, self.instance.get_params())
