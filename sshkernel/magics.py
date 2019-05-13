@@ -118,8 +118,10 @@ class SSHKernelMagics(Magic):
             raise ValueError(msg)
 
     def post_process(self, retval):
-        return self.retval
-
+        try:
+            return self.retval
+        except AttributeError:
+            return retval
 
 def register_magics(kernel):
     kernel.register_magics(SSHKernelMagics)
