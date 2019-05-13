@@ -58,7 +58,7 @@ class MagicTest(unittest.TestCase):
         func = self.instance.validate_value_string
 
         ok_cases = [
-            'abc 123%',
+            'abc 123%@-',
         ]
         ng_cases = [
             'ABC ###',

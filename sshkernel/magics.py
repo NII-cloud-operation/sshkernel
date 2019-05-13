@@ -8,7 +8,7 @@ from metakernel import Magic
 
 class SSHKernelMagics(Magic):
 
-    blacklist = re.compile(r'.*([^- %,\./:=_a-zA-Z\d])')
+    blacklist = re.compile(r'.*([^- %,\./:=_a-zA-Z\d@])')
 
     def line_login(self, host):
         """
