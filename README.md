@@ -82,6 +82,10 @@ Minimal example:
 
 See also a tutorial above in detail.
 
+## Parameterized run
+
+See <examples/parameterized-notebook.ipynb>.
+
 ## Limitations
 
 * As Jupyter Notebook has limitation to handle `stdin`,
