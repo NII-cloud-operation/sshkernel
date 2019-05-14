@@ -112,7 +112,7 @@ class SSHKernelMagics(Magic):
         '''
         m = re.match(self.blacklist, str(val_str))
         if m:
-            msg = "{val} contains invalid character {matched}. Valid characters are A-Z a-z 0-9 - % , . / : = _".format(
+            msg = "{val} contains invalid character {matched}. Valid characters are A-Z a-z 0-9 - % , . / : = _ @".format(
                 val=repr(val_str), matched=repr(m.group(1))
             )
             raise ValueError(msg)
