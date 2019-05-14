@@ -81,6 +81,22 @@ class SSHKernel(MetaKernel):
         self.log.setLevel(INFO)
         self.redirect_to_log = True
         self._sshwrapper = None
+        self._parameters = dict()
+
+    def set_param(self, key, value):
+        '''
+        Set sshkernel parameter for hostname and remote envvars.
+        '''
+
+        self._parameters[key] = value
+
+    def get_params(self):
+        '''
+        Get sshkernel parameters dict.
+        '''
+
+        return self._parameters
+
 
     def new_ssh_wrapper(self):
         '''
@@ -91,7 +107,7 @@ class SSHKernel(MetaKernel):
 
         self.del_ssh_wrapper()
 
-        self.sshwrapper = SSHWrapperPlumbum()
+        self.sshwrapper = SSHWrapperPlumbum(self.get_params())
 
     def del_ssh_wrapper(self):
         '''
@@ -198,6 +214,7 @@ class SSHKernel(MetaKernel):
         # self.Print('[INFO] Restart sshkernel ...')
 
         self.del_ssh_wrapper()
+        self._parameters = dict()
 
     def assert_connected(self):
         '''

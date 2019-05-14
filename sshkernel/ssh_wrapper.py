@@ -1,6 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod 
 
 class SSHWrapper(ABC):
+    @abstractmethod
+    def __init__(self, envdelta):
+        '''
+        Args:
+            envdelta (dict) envdelta is injected into remote environment variables
+        '''
+
     @abstractmethod
     def exec_command(self, cmd, print_function):
         '''

@@ -38,3 +38,38 @@ class MagicTest(unittest.TestCase):
 
         self.assertIsNone(noreturn)
         self.assertIsNone(self.instance.retval)
+
+    def test_expand_parameters(self):
+        params = dict(A="1", B="3")
+        s = '{A}2{B}'
+
+        ret = self.instance.expand_parameters(s, params)
+        self.assertEqual(ret, "123")
+
+    def test_expand_parameters_raise(self):
+        with self.assertRaises(KeyError):
+            self.instance.expand_parameters('{NOTFOUND}', {})
+
+    def test_expand_parameters_with_unclosed_string(self):
+        ret = self.instance.expand_parameters('{YO', {})
+        self.assertEqual(ret, '{YO')
+
+    def test_validate_value_string(self):
+        func = self.instance.validate_value_string
+
+        ok_cases = [
+            'abc 123%@-',
+        ]
+        ng_cases = [
+            'ABC ###',
+            'ABC"',
+            'ABC()',
+            'ABC${}',
+        ]
+
+        for ok in ok_cases:
+            self.assertIsNone(func(ok))
+
+        for ng in ng_cases:
+            with self.assertRaises(ValueError):
+                func(ng)
