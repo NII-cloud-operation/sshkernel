@@ -29,8 +29,8 @@ pip uninstall sshkernel
 
 Basic examples of using SSH Kernel.
 
-* [Getting Started](examples/getting-started.ipynb)
-* [Getting Started (in Japanese)](examples/getting-started-ja.ipynb)
+* [Getting Started](https://github.com/NII-cloud-operation/sshkernel/blob/master/examples/getting-started.ipynb)
+* [Getting Started (in Japanese)](https://github.com/NII-cloud-operation/sshkernel/blob/master/examples/getting-started-ja.ipynb)
 
 ## Configuration
 
@@ -84,7 +84,7 @@ See also a tutorial above in detail.
 
 ## Parameterized run
 
-See <examples/parameterized-notebook.ipynb>.
+See [examples/parameterized-notebook](https://github.com/NII-cloud-operation/sshkernel/blob/master/examples/parameterized-notebook.ipynb).
 
 ## Limitations
 
