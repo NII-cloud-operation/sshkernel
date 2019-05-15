@@ -22,7 +22,9 @@ setup(
     description="SSH Kernel",
     extras_require={
         'dev': [
+            'autopep8',
             'coverage',
+            'pylint',
             'pytest>=3',
             'pytest-watch',
             'tox',
