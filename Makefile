@@ -1,4 +1,4 @@
-.PHONY: all checkdist clean sdist test uploadtest upload
+.PHONY: all checkdist clean lint sdist unit uploadtest upload
 
 all: ;
 
@@ -6,12 +6,15 @@ checkdist: sdist
 	twine check dist/*
 
 clean:
-	rm -fr ./dist
+	rm -fr ./build ./dist
+
+lint:
+	pylint sshkernel
 
 sdist:
 	python3 setup.py sdist bdist_wheel
 
-test:
+unit:
 	py.test sshkernel tests/unit --disable-pytest-warnings
 
 uploadtest: sdist checkdist
