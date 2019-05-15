@@ -95,8 +95,18 @@ echo {marker}env: $(cat -v <(env -0))
         self._connected = True
         self._host = host
 
+    def _forward_local_agent(self, paramiko_client):
+        # SSH Agent Forwarding in Paramiko
+        # http://docs.paramiko.org/en/2.4/api/agent.html
+        sess = paramiko_client.get_transport().open_session()
+        paramiko.agent.AgentRequestHandler(sess)
+
     def _build_remote(self, host):
         (hostname, lookup) = self._init_ssh_config('~/.ssh/config', host)
+
+        forward_agent = None
+        if 'forwardagent' in lookup:
+            forward_agent = lookup.pop('forwardagent')
 
         print('[ssh] host={host} hostname={hostname} other_conf={other_conf}'.format(
             host=host,
@@ -105,6 +115,10 @@ echo {marker}env: $(cat -v <(env -0))
         ))
 
         remote = ParamikoMachine(hostname, password=None, **lookup)
+
+        if forward_agent == 'yes':
+            print('[ssh] forwarding local agent')
+            self._forward_local_agent(remote._client)
 
         return remote
 
@@ -176,6 +190,7 @@ echo {marker}env: $(cat -v <(env -0))
             'user',
             'port',
             'keyfile',
+            'forwardagent',
         ]
         conf = paramiko.config.SSHConfig()
         expanded_path = os.path.expanduser(filename)
