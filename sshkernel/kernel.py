@@ -79,7 +79,6 @@ class SSHKernel(MetaKernel):
         # TODO: Survey logging architecture
         self.log.name = 'SSHKernel'
         self.log.setLevel(INFO)
-        self.redirect_to_log = True
         self._sshwrapper = None
         self._parameters = dict()
 
