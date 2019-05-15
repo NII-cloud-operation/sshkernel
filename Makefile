@@ -20,5 +20,5 @@ unit:
 uploadtest: sdist checkdist
 	python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
-upload: test sdist checkdist
+upload: unit sdist checkdist
 	python3 -m twine upload dist/*
