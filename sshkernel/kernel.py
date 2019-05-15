@@ -74,13 +74,13 @@ class SSHKernel(MetaKernel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.silent = False
 
-        # TODO: Survey logging architecture
-        self.log.name = 'SSHKernel'
-        self.log.setLevel(INFO)
         self._sshwrapper = None
         self._parameters = dict()
+
+        # Touch inherited attribute
+        self.log.name = 'SSHKernel'
+        self.log.setLevel(INFO)
 
     def set_param(self, key, value):
         '''
