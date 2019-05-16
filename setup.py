@@ -39,7 +39,7 @@ setup(
     license='BSD 3-clause "New" or "Revised License"',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
+    url="https://github.com/nii-cloud-operation/sshkernel",
     packages=['sshkernel'],
     classifiers=[
         "Framework :: IPython",
