@@ -35,8 +35,6 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
         self.instance = instance
 
     def test_connect_should_raise_socket_error(self):
-        self.instance._init_ssh_config = Mock(return_value=('dummy', {}))
-
         # FIXME: fix setUp() to pass the line below
         #self.assertIsNone(self.instance._remote)
         self.assertFalse(self.instance._connected)
@@ -85,7 +83,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
         mock.assert_called_once()
 
-    def test_init_ssh_config(self):
+    def test_load_ssh_config_for_plumbum(self):
         import tempfile
         with tempfile.NamedTemporaryFile('w') as f:
             f.write(dedent("""
@@ -97,10 +95,11 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup) = self.instance._init_ssh_config(f.name, "test")
+            (hostname, lookup, forward) = self.instance._load_ssh_config_for_plumbum(f.name, "test")
 
             self.assertIsInstance(lookup, dict)
             self.assertEqual(hostname, "127.0.0.10")
+            self.assertIsNone(forward)
 
         with tempfile.NamedTemporaryFile('w') as f:
             f.write(dedent("""
@@ -110,30 +109,33 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup) = self.instance._init_ssh_config(f.name, "test2")
+            (hostname, lookup, _) = self.instance._load_ssh_config_for_plumbum(f.name, "test2")
 
             self.assertIsInstance(lookup, dict)
             self.assertEqual(hostname, "test2")
 
         with tempfile.NamedTemporaryFile('w') as f:
             f.write(dedent("""
-            ForwardAgent yes  ## Cannot handle
-
             Host test3
                 User admin
                 Port 2222
                 HostName 1.2.3.4
                 IdentityFile ~/.ssh/id_rsa_test
+
+            Host *
+                ForwardAgent yes
             """))
 
             f.seek(0)
 
-            (hostname, lookup) = self.instance._init_ssh_config(f.name, "test3")
+            (hostname, lookup, forward) = self.instance._load_ssh_config_for_plumbum(f.name, "test3")
 
             self.assertEqual(
                 set(lookup.keys()),
                 set(['user', 'port', 'keyfile'])
             )
+
+            self.assertEqual(forward, 'yes')
 
     def test_append_command(self):
         cmd = '''
