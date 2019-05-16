@@ -42,6 +42,7 @@ Possible keywords are as follows:
 * User
 * Port
 * IdentityFile
+* ForwardAgent
 
 ### Notes about private keys
 
@@ -61,6 +62,10 @@ Host myserver
   User admin
   Port 2222
   IdentityFile ~/.ssh/id_rsa_myserver
+  ForwardAgent yes
+
+Host *
+  User ubuntu
 ```
 
 Example2:
