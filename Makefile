@@ -1,4 +1,4 @@
-.PHONY: all checkdist clean lint sdist unit uploadtest upload
+.PHONY: all checkdist clean cover lint sdist unit uploadtest upload
 
 all: ;
 
@@ -7,6 +7,11 @@ checkdist: sdist
 
 clean:
 	rm -fr ./build ./dist
+
+cover:
+	coverage run --source sshkernel --branch -m unittest discover tests/unit
+	coverage report -m
+	coverage html
 
 lint:
 	pylint sshkernel
