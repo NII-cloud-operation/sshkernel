@@ -102,19 +102,15 @@ echo {marker}env: $(cat -v <(env -0))
         paramiko.agent.AgentRequestHandler(sess)
 
     def _build_remote(self, host):
-        (hostname, lookup) = self._init_ssh_config('~/.ssh/config', host)
-
-        forward_agent = None
-        if 'forwardagent' in lookup:
-            forward_agent = lookup.pop('forwardagent')
+        (hostname, plumbum_kwargs, forward_agent) = self._load_ssh_config_for_plumbum('~/.ssh/config', host)
 
         print('[ssh] host={host} hostname={hostname} other_conf={other_conf}'.format(
             host=host,
             hostname=hostname,
-            other_conf=lookup,
+            other_conf=plumbum_kwargs,
         ))
 
-        remote = ParamikoMachine(hostname, password=None, **lookup)
+        remote = ParamikoMachine(hostname, password=None, **plumbum_kwargs)
 
         if forward_agent == 'yes':
             print('[ssh] forwarding local agent')
@@ -185,13 +181,10 @@ echo {marker}env: $(cat -v <(env -0))
 
         self._remote.env.update(quoted_newenv)
 
-    def _init_ssh_config(self, filename, host):
-        supported_fields = [
-            'user',
-            'port',
-            'keyfile',
-            'forwardagent',
-        ]
+    def _load_ssh_config_for_plumbum(self, filename, host):
+        '''Parse and postprocess ssh_config
+        '''
+
         conf = paramiko.config.SSHConfig()
         expanded_path = os.path.expanduser(filename)
 
@@ -201,17 +194,23 @@ echo {marker}env: $(cat -v <(env -0))
 
         lookup = conf.lookup(host)
 
+        plumbum_kwargs = dict(
+            user=None,
+            port=None,
+            keyfile=None,
+        )
+
         if 'hostname' in lookup:
-            hostname = lookup.pop('hostname')
+            plumbum_hostname = lookup.pop('hostname')
         else:
-            hostname = host
+            plumbum_hostname = host
 
-        if 'identityfile' in lookup:
-            lookup['keyfile'] = lookup.pop('identityfile')
         if 'port' in lookup:
-            lookup['port'] = int(lookup.pop('port'))
+            plumbum_kwargs['port'] = int(lookup['port'])
 
-        keys_filtered = set(supported_fields) & set(lookup.keys())
-        lookup_filtered = dict((k, lookup[k]) for k in keys_filtered)
+        plumbum_kwargs['user'] = lookup.get('user')
+        plumbum_kwargs['keyfile'] = lookup.get('identityfile')
 
-        return (hostname, lookup_filtered)
+        forward_agent = lookup.get('forwardagent')
+
+        return (plumbum_hostname, plumbum_kwargs, forward_agent)
