@@ -18,6 +18,12 @@ python -m sshkernel install [--user|--sys-prefix]
 # Type `python -m sshkernel install --help` for more information.
 ```
 
+To upgrade:
+
+```
+pip install --upgrade sshkernel
+```
+
 To uninstall:
 
 ```
