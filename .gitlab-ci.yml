@@ -59,9 +59,10 @@ run_papermill:
   image: python:3.7
   stage: medium_test
   script:
+    - pip install .
     - pip install papermill
     - python ./tests/integration/setup.py
-    - pytest --capture=no --disable-pytest-warnings tests/integration 
+    - python -m unittest discover tests/integration 
   artifacts:
     paths:
       - ./tests/integration/out
