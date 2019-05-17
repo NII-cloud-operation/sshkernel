@@ -8,7 +8,7 @@ services:
 
 stages:
   - test
-  - coverage
+  - test_readme_procedure
   - medium_test
 
 # Change pip's cache directory to be inside the project directory since we can
@@ -24,19 +24,22 @@ variables:
 cache:
   paths:
     - .cache/pip
-    - venv/
 
-#
-# Use venv to test instruction in README
-#
 before_script:
-  - which python
+  - curl -O https://bootstrap.pypa.io/get-pip.py
+  - python get-pip.py
+  - pip install -r dev-requirements.txt
   - python -V
-  - python -mvenv venv
-  - source venv/bin/activate
   - which python
-  - python -V
-  - pip install .[dev]
+  - which pip
+
+pip_install:
+  stage: test_readme_procedure
+  script:
+    - pip install -U .
+    - python -m sshkernel install
+    - pip freeze | grep sshkernel
+    - jupyter kernelspec list | grep ssh
 
 python36:
   image: python:3.6
@@ -47,14 +50,6 @@ python37:
   image: python:3.7
   stage: test
   script: tox -e py37
-
-cover37:
-  image: python:3.7
-  stage: coverage
-  script:
-    - coverage run --source sshkernel -m unittest discover tests/unit
-    - coverage html
-    - coverage report
   artifacts:
     paths:
     - htmlcov
