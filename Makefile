@@ -8,22 +8,9 @@ checkdist: sdist
 clean:
 	rm -fr ./build ./dist
 
-cover:
-	coverage run --source sshkernel --branch -m unittest discover tests/unit
-	coverage report -m
-	coverage html
-
 lint:
-	pylint sshkernel
-
-sdist:
-	python3 setup.py sdist bdist_wheel
-
-unit:
-	py.test sshkernel tests/unit --disable-pytest-warnings
-
-uploadtest: sdist checkdist
-	python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	tox -e flake8 || true
+	tox -e pylint || true
 
 upload: unit sdist checkdist
 	python3 -m twine upload dist/*
