@@ -32,10 +32,9 @@ class SSHWrapperPlumbum(SSHWrapper):
         header = ''
         footer = '''
 EXIT_CODE=$?
-echo
-echo {marker}code: $EXIT_CODE
-echo {marker}pwd: $(pwd)
-echo {marker}env: $(cat -v <(env -0))
+echo {marker}code: ${{EXIT_CODE}}{marker}
+echo {marker}pwd: $(pwd){marker}
+echo {marker}env: $(cat -v <(env -0)){marker}
 '''.format(marker=marker)
 
         full_command = '\n'.join([header, cmd, footer])
@@ -57,7 +56,7 @@ echo {marker}env: $(cat -v <(env -0))
 
         timeout = None
 
-        marker = str(time.time())
+        marker = str(time.time())[::-1]
         full_command = self._append_command(cmd, marker)
 
         proc = self._remote['bash'][
@@ -72,8 +71,18 @@ echo {marker}env: $(cat -v <(env -0))
         for (out, err) in iterator:
             line = out if out else err
 
-            if line.startswith(marker):
-                env_out += line.split(marker)[1]
+            if line.endswith(marker + "\n"):
+
+                if not line.startswith(marker):
+                    # The `line` contains 2 markers
+                    #
+                    line1, line2, _ = line.split(marker)
+                    print_function(line1)
+                    line = line2
+
+                env_out += line.replace(marker, '')
+                env_out += "\n"
+
             else:
                 print_function(line)
 
