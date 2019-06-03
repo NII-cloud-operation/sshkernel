@@ -10,6 +10,7 @@ stages:
   - test
   - test_readme_procedure
   - medium_test
+  - release
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -67,3 +68,13 @@ run_papermill:
     paths:
       - ./tests/integration/out
     expire_in: 1 month
+
+release_pypi_package:
+  image: python:3.7
+  stage: release
+  script: tox -e release
+  artifacts:
+    paths:
+    - dist
+  only:
+    - tags

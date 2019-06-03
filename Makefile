@@ -12,5 +12,5 @@ lint:
 	tox -e flake8 || true
 	tox -e pylint || true
 
-upload: unit sdist checkdist
-	python3 -m twine upload dist/*
+upload:
+	tox -e release
