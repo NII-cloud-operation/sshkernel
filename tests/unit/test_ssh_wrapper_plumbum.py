@@ -148,7 +148,7 @@ yo
         full_command = self.instance._append_command(cmd, marker)
 
         self.assertIsInstance(full_command, str)
-        self.assertEqual(full_command.count(marker), 3)
+        self.assertEqual(full_command.count(marker), 6)
 
     @unittest.skip('Fail to patch plumbum')
     @patch('sshkernel.ssh_wrapper_plumbum.SSHWrapperPlumbum.get_cwd', return_value='/tmp')
