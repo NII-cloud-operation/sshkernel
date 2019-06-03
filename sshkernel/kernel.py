@@ -226,3 +226,6 @@ class SSHKernel(MetaKernel):
         elif not self.sshwrapper.isconnected():
             self.Error('[ssh] Not connected.')
             raise SSHKernelNotConnectedException
+
+    def Print(self, message):
+        super().Write(str(message) + "\n")
