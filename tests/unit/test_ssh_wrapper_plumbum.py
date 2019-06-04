@@ -15,6 +15,7 @@ from sshkernel import SSHException
 from sshkernel.ssh_wrapper import SSHWrapper
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 from sshkernel.ssh_wrapper_plumbum import append_footer
+from sshkernel.ssh_wrapper_plumbum import merge_stdout_stderr
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
 
@@ -193,3 +194,22 @@ pwd: /some/where
         proc.close.assert_not_called()
         fn_after()
         proc.close.assert_called_once()
+
+    def test_merge_stdout_stderr(self):
+        lines = [
+            ("a", None),
+            ("b\n", None),
+            (None, "c"),
+            ("d", None),
+        ]
+
+        def outs():
+            for line in lines:
+                yield line
+
+        merged = merge_stdout_stderr(outs())
+        lines = list(merged)
+
+        self.assertEqual(len(lines), 4)
+        for line in lines:
+            self.assertIsNotNone(line)
