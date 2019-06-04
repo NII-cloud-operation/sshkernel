@@ -1,11 +1,5 @@
 image: python:latest
 
-services:
-  - alias: ubuntu18
-    name: rastasheep/ubuntu-sshd:18.04
-  - alias: centos7
-    name: indigodatacloud/centos-sshd:7
-
 stages:
   - test
   - test_readme_procedure
@@ -64,10 +58,16 @@ run_papermill:
     - pip install papermill
     - python ./tests/integration/setup.py
     - python -m unittest discover tests/integration 
+  services:
+    - alias: ubuntu18
+      name: rastasheep/ubuntu-sshd:18.04
+    - alias: centos7
+      name: indigodatacloud/centos-sshd:7
   artifacts:
     paths:
       - ./tests/integration/out
     expire_in: 1 month
+
 
 release_pypi_package:
   image: python:3.7
