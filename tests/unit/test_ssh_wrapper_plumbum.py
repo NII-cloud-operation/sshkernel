@@ -196,6 +196,9 @@ pwd: /some/where
         fn_after()
         proc.close.assert_called_once()
 
+
+class UtilityTest(unittest.TestCase):
+
     def test_merge_stdout_stderr(self):
         lines = [
             ("a", None),
@@ -228,6 +231,30 @@ line2
 
         iterator = gen_iterator()
         print_function = Mock()
+
+        env_info = process_output(iterator, marker, print_function)
+        env_info_expected = 'code: 0\npwd: /tmp\n'
+
+        self.assertEqual(env_info, env_info_expected)
+        print_function.assert_any_call('line1\n')
+        print_function.assert_any_call('line2\n')
+
+    def test_process_output_without_newline(self):
+        marker = 'MARKER'
+        def gen_iterator():
+            lines = io.StringIO('''line1
+line2
+line3{marker}code: 0{marker}
+{marker}pwd: /tmp{marker}
+'''.format(marker=marker))
+            for line in lines:
+                yield (line, None)
+
+        iterator = gen_iterator()
+        print_function = Mock()
         env_info = process_output(iterator, marker, print_function)
 
+        print_function.assert_any_call('line1\n')
+        print_function.assert_any_call('line2\n')
+        print_function.assert_any_call('line3')  # without newline
         self.assertEqual(env_info, 'code: 0\npwd: /tmp\n')
