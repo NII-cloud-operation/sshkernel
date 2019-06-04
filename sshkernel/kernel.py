@@ -159,14 +159,11 @@ class SSHKernel(MetaKernel):
 
             return ExceptionWrapper(ename, evalue, tb)
 
-    # Implement base class method
-    def get_completions(self, info):
-        # info: Dict = self.parse_code(code, 0, cursor_pos)
-        code = info['line']
-        cursor_pos = info['column']
-
-        default = []
-
+    # Implement ipykernel method
+    def do_complete(self, code, cursor_pos):
+        default = {'matches': [], 'cursor_start': 0,
+                   'cursor_end': cursor_pos, 'metadata': dict(),
+                   'status': 'ok'}
         try:
             self.assert_connected()
         except SSHKernelNotConnectedException as e:
@@ -174,17 +171,15 @@ class SSHKernel(MetaKernel):
             self.log.error('not connected')
             return default
 
-        code = code[:cursor_pos]
-
-        if not code or code[-1] == ' ':
+        code_current = code[:cursor_pos]
+        if not code_current or code_current[-1] == ' ':
             return default
 
-        tokens = code.replace(';', ' ').split()
+        tokens = code_current.replace(';', ' ').split()
         if not tokens:
             return default
 
         token = tokens[-1]
-        start = cursor_pos - len(token)
 
         if token[0] == '$':
             # complete variables
@@ -206,7 +201,16 @@ class SSHKernel(MetaKernel):
 
         matches = [m for m in matches if m.startswith(token)]
 
-        return matches
+        cursor_start = cursor_pos - len(token)
+        cursor_end = cursor_pos
+
+        return dict(
+            matches=sorted(matches),
+            cursor_start=cursor_start,
+            cursor_end=cursor_end,
+            metadata=dict(),
+            status="ok"
+        )
 
     def restart_kernel(self):
         # TODO: log message
