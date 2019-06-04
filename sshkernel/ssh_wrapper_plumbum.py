@@ -44,28 +44,11 @@ class SSHWrapperPlumbum(SSHWrapper):
         ].popen()
         self._update_interrupt_function(proc)
 
-        iterator = merge_stdout_stderr(proc.iter_lines())
+        tuple_iterator = proc.iter_lines()
+        env_info = process_output(tuple_iterator, marker, print_function)
 
-        env_out = ''
-        for line in iterator:
-
-            if line.endswith(marker + "\n"):
-
-                if not line.startswith(marker):
-                    # The `line` contains 2 markers
-                    #
-                    line1, line2, _ = line.split(marker)
-                    print_function(line1)
-                    line = line2
-
-                env_out += line.replace(marker, '')
-                env_out += "\n"
-
-            else:
-                print_function(line)
-
-        if env_out:
-            return self.post_exec_command(env_out)
+        if env_info:
+            return self.post_exec_command(env_info)
         else:
             return 1
 
@@ -236,3 +219,37 @@ def merge_stdout_stderr(iterator):
             yield stdout
         else:
             yield stderr
+
+def process_output(tuple_iterator, marker, print_function):
+    """Process iterator which is return of Popen.communicate()
+
+    For normal lines, call callback print-fn.
+
+    Args:
+        tuple_iterator: yields tuple (string, string)
+        print_function: callback fn
+
+    Returns:
+        string: footer string (YAML format)
+    """
+
+    iterator = merge_stdout_stderr(tuple_iterator)
+
+    env_out = ''
+    for line in iterator:
+
+        if line.endswith(marker + "\n"):
+
+            if not line.startswith(marker):
+                # The `line` contains 2 markers
+                #
+                line1, line2, _ = line.split(marker)
+                print_function(line1)
+                line = line2
+
+            env_out += line.replace(marker, '')
+
+        else:
+            print_function(line)
+
+    return env_out
