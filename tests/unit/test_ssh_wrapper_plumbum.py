@@ -14,6 +14,9 @@ from sshkernel import ExceptionWrapper
 from sshkernel import SSHException
 from sshkernel.ssh_wrapper import SSHWrapper
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
+from sshkernel.ssh_wrapper_plumbum import append_footer
+from sshkernel.ssh_wrapper_plumbum import merge_stdout_stderr
+from sshkernel.ssh_wrapper_plumbum import process_output
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
 
@@ -137,7 +140,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             self.assertEqual(forward, 'yes')
 
-    def test_append_command(self):
+    def test_append_footer(self):
         cmd = '''
 ls
 ls
@@ -145,10 +148,10 @@ yo
 '''
         marker = 'THISISMARKER'
 
-        full_command = self.instance._append_command(cmd, marker)
+        full_command = append_footer(cmd, marker)
 
         self.assertIsInstance(full_command, str)
-        self.assertEqual(full_command.count(marker), 3)
+        self.assertEqual(full_command.count(marker), 6)
 
     @unittest.skip('Fail to patch plumbum')
     @patch('sshkernel.ssh_wrapper_plumbum.SSHWrapperPlumbum.get_cwd', return_value='/tmp')
@@ -192,3 +195,66 @@ pwd: /some/where
         proc.close.assert_not_called()
         fn_after()
         proc.close.assert_called_once()
+
+
+class UtilityTest(unittest.TestCase):
+
+    def test_merge_stdout_stderr(self):
+        lines = [
+            ("a", None),
+            ("b\n", None),
+            (None, "c"),
+            ("d", None),
+        ]
+
+        def outs():
+            for line in lines:
+                yield line
+
+        merged = merge_stdout_stderr(outs())
+        lines = list(merged)
+
+        self.assertEqual(len(lines), 4)
+        for line in lines:
+            self.assertIsNotNone(line)
+
+    def test_process_output_with_newline(self):
+        marker = 'MARKER'
+        def gen_iterator():
+            lines = io.StringIO('''line1
+line2
+{marker}code: 0{marker}
+{marker}pwd: /tmp{marker}
+'''.format(marker=marker))
+            for line in lines:
+                yield (line, None)
+
+        iterator = gen_iterator()
+        print_function = Mock()
+
+        env_info = process_output(iterator, marker, print_function)
+        env_info_expected = 'code: 0\npwd: /tmp\n'
+
+        self.assertEqual(env_info, env_info_expected)
+        print_function.assert_any_call('line1\n')
+        print_function.assert_any_call('line2\n')
+
+    def test_process_output_without_newline(self):
+        marker = 'MARKER'
+        def gen_iterator():
+            lines = io.StringIO('''line1
+line2
+line3{marker}code: 0{marker}
+{marker}pwd: /tmp{marker}
+'''.format(marker=marker))
+            for line in lines:
+                yield (line, None)
+
+        iterator = gen_iterator()
+        print_function = Mock()
+        env_info = process_output(iterator, marker, print_function)
+
+        print_function.assert_any_call('line1\n')
+        print_function.assert_any_call('line2\n')
+        print_function.assert_any_call('line3')  # without newline
+        self.assertEqual(env_info, 'code: 0\npwd: /tmp\n')

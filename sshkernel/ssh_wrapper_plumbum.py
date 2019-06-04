@@ -22,26 +22,6 @@ class SSHWrapperPlumbum(SSHWrapper):
         self._host = ''
         self.interrupt_function = lambda: None
 
-    def _append_command(self, cmd, marker):
-        '''
-        Append header/footer to `cmd`.
-
-        Returns:
-          str: new_command
-        '''
-        header = ''
-        footer = '''
-EXIT_CODE=$?
-echo
-echo {marker}code: $EXIT_CODE
-echo {marker}pwd: $(pwd)
-echo {marker}env: $(cat -v <(env -0))
-'''.format(marker=marker)
-
-        full_command = '\n'.join([header, cmd, footer])
-
-        return full_command
-
     def exec_command(self, cmd, print_function):
         '''
         Returns:
@@ -55,10 +35,8 @@ echo {marker}env: $(cat -v <(env -0))
 
         print_function('[ssh] host = {}, cwd = {}\n'.format(self._host, self.get_cwd()))
 
-        timeout = None
-
-        marker = str(time.time())
-        full_command = self._append_command(cmd, marker)
+        marker = str(time.time())[::-1]
+        full_command = append_footer(cmd, marker)
 
         proc = self._remote['bash'][
             '-c',
@@ -66,19 +44,11 @@ echo {marker}env: $(cat -v <(env -0))
         ].popen()
         self._update_interrupt_function(proc)
 
-        iterator = proc.iter_lines()
+        tuple_iterator = proc.iter_lines()
+        env_info = process_output(tuple_iterator, marker, print_function)
 
-        env_out = ''
-        for (out, err) in iterator:
-            line = out if out else err
-
-            if line.startswith(marker):
-                env_out += line.split(marker)[1]
-            else:
-                print_function(line)
-
-        if env_out:
-            return self.post_exec_command(env_out)
+        if env_info:
+            return self.post_exec_command(env_info)
         else:
             return 1
 
@@ -214,3 +184,73 @@ echo {marker}env: $(cat -v <(env -0))
         forward_agent = lookup.get('forwardagent')
 
         return (plumbum_hostname, plumbum_kwargs, forward_agent)
+
+def append_footer(cmd, marker):
+    '''
+    Append header/footer to `cmd`.
+
+    Returns:
+        str: new_command
+    '''
+    header = ''
+    footer = '''
+EXIT_CODE=$?
+echo {marker}code: ${{EXIT_CODE}}{marker}
+echo {marker}pwd: $(pwd){marker}
+echo {marker}env: $(cat -v <(env -0)){marker}
+'''.format(marker=marker)
+
+    full_command = '\n'.join([header, cmd, footer])
+
+    return full_command
+
+def merge_stdout_stderr(iterator):
+    """Merge two iterators returned by Popen.communicate()
+
+    Args:
+        iterator: yields (string, string), either one of two string is None
+
+    Returns:
+        iterator: yields string
+    """
+
+    for (stdout, stderr) in iterator:
+        if stdout:
+            yield stdout
+        else:
+            yield stderr
+
+def process_output(tuple_iterator, marker, print_function):
+    """Process iterator which is return of Popen.communicate()
+
+    For normal lines, call callback print-fn.
+
+    Args:
+        tuple_iterator: yields tuple (string, string)
+        print_function: callback fn
+
+    Returns:
+        string: footer string (YAML format)
+    """
+
+    iterator = merge_stdout_stderr(tuple_iterator)
+
+    env_out = ''
+    for line in iterator:
+
+        if line.endswith(marker + "\n"):
+
+            if not line.startswith(marker):
+                # The `line` contains 2 markers and trailing newline
+                #
+                line1, line2, _ = line.split(marker) # "123MARKcode: 0MARK\n" splitted into ("123", "code: 0", "\n")
+                print_function(line1)
+                line = line2
+
+            env_out += line.replace(marker, '').rstrip()
+            env_out += "\n"
+
+        else:
+            print_function(line)
+
+    return env_out
