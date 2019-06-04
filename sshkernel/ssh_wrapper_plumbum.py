@@ -44,11 +44,10 @@ class SSHWrapperPlumbum(SSHWrapper):
         ].popen()
         self._update_interrupt_function(proc)
 
-        iterator = proc.iter_lines()
+        iterator = merge_stdout_stderr(proc.iter_lines())
 
         env_out = ''
-        for (out, err) in iterator:
-            line = out if out else err
+        for line in iterator:
 
             if line.endswith(marker + "\n"):
 
@@ -221,3 +220,19 @@ echo {marker}env: $(cat -v <(env -0)){marker}
     full_command = '\n'.join([header, cmd, footer])
 
     return full_command
+
+def merge_stdout_stderr(iterator):
+    """Merge two iterators returned by Popen.communicate()
+
+    Args:
+        iterator: yields (string, string), either one of two string is None
+
+    Returns:
+        iterator: yields string
+    """
+
+    for (stdout, stderr) in iterator:
+        if stdout:
+            yield stdout
+        else:
+            yield stderr
