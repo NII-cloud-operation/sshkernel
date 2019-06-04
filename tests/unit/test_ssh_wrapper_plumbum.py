@@ -16,6 +16,7 @@ from sshkernel.ssh_wrapper import SSHWrapper
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 from sshkernel.ssh_wrapper_plumbum import append_footer
 from sshkernel.ssh_wrapper_plumbum import merge_stdout_stderr
+from sshkernel.ssh_wrapper_plumbum import process_output
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
 
@@ -213,3 +214,20 @@ pwd: /some/where
         self.assertEqual(len(lines), 4)
         for line in lines:
             self.assertIsNotNone(line)
+
+    def test_process_output_with_newline(self):
+        marker = 'MARKER'
+        def gen_iterator():
+            lines = io.StringIO('''line1
+line2
+{marker}code: 0{marker}
+{marker}pwd: /tmp{marker}
+'''.format(marker=marker))
+            for line in lines:
+                yield (line, None)
+
+        iterator = gen_iterator()
+        print_function = Mock()
+        env_info = process_output(iterator, marker, print_function)
+
+        self.assertEqual(env_info, 'code: 0\npwd: /tmp\n')
