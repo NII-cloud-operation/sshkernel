@@ -22,25 +22,6 @@ class SSHWrapperPlumbum(SSHWrapper):
         self._host = ''
         self.interrupt_function = lambda: None
 
-    def _append_command(self, cmd, marker):
-        '''
-        Append header/footer to `cmd`.
-
-        Returns:
-          str: new_command
-        '''
-        header = ''
-        footer = '''
-EXIT_CODE=$?
-echo {marker}code: ${{EXIT_CODE}}{marker}
-echo {marker}pwd: $(pwd){marker}
-echo {marker}env: $(cat -v <(env -0)){marker}
-'''.format(marker=marker)
-
-        full_command = '\n'.join([header, cmd, footer])
-
-        return full_command
-
     def exec_command(self, cmd, print_function):
         '''
         Returns:
@@ -55,7 +36,7 @@ echo {marker}env: $(cat -v <(env -0)){marker}
         print_function('[ssh] host = {}, cwd = {}\n'.format(self._host, self.get_cwd()))
 
         marker = str(time.time())[::-1]
-        full_command = self._append_command(cmd, marker)
+        full_command = append_footer(cmd, marker)
 
         proc = self._remote['bash'][
             '-c',
@@ -221,3 +202,22 @@ echo {marker}env: $(cat -v <(env -0)){marker}
         forward_agent = lookup.get('forwardagent')
 
         return (plumbum_hostname, plumbum_kwargs, forward_agent)
+
+def append_footer(cmd, marker):
+    '''
+    Append header/footer to `cmd`.
+
+    Returns:
+        str: new_command
+    '''
+    header = ''
+    footer = '''
+EXIT_CODE=$?
+echo {marker}code: ${{EXIT_CODE}}{marker}
+echo {marker}pwd: $(pwd){marker}
+echo {marker}env: $(cat -v <(env -0)){marker}
+'''.format(marker=marker)
+
+    full_command = '\n'.join([header, cmd, footer])
+
+    return full_command

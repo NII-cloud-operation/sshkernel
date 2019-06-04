@@ -14,6 +14,7 @@ from sshkernel import ExceptionWrapper
 from sshkernel import SSHException
 from sshkernel.ssh_wrapper import SSHWrapper
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
+from sshkernel.ssh_wrapper_plumbum import append_footer
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
 
@@ -137,7 +138,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             self.assertEqual(forward, 'yes')
 
-    def test_append_command(self):
+    def test_append_footer(self):
         cmd = '''
 ls
 ls
@@ -145,7 +146,7 @@ yo
 '''
         marker = 'THISISMARKER'
 
-        full_command = self.instance._append_command(cmd, marker)
+        full_command = append_footer(cmd, marker)
 
         self.assertIsInstance(full_command, str)
         self.assertEqual(full_command.count(marker), 6)
