@@ -54,8 +54,6 @@ echo {marker}env: $(cat -v <(env -0)){marker}
 
         print_function('[ssh] host = {}, cwd = {}\n'.format(self._host, self.get_cwd()))
 
-        timeout = None
-
         marker = str(time.time())[::-1]
         full_command = self._append_command(cmd, marker)
 
