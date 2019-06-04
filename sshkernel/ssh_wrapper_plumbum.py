@@ -241,13 +241,14 @@ def process_output(tuple_iterator, marker, print_function):
         if line.endswith(marker + "\n"):
 
             if not line.startswith(marker):
-                # The `line` contains 2 markers
+                # The `line` contains 2 markers and trailing newline
                 #
-                line1, line2, _ = line.split(marker)
+                line1, line2, _ = line.split(marker) # "123MARKcode: 0MARK\n" splitted into ("123", "code: 0", "\n")
                 print_function(line1)
                 line = line2
 
-            env_out += line.replace(marker, '')
+            env_out += line.replace(marker, '').rstrip()
+            env_out += "\n"
 
         else:
             print_function(line)
