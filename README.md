@@ -10,12 +10,37 @@ with [paramiko](http://www.paramiko.org/) SSH client.
 * Python3.5+
 * IPython 7.0+
 
+## Recommended system requirements
+
+Host OS (running notebook server):
+
+* Ubuntu 18.04+
+* Windows 10 WSL (Ubuntu 18.04+)
+
+Target OS (running sshd):
+
+* Ubuntu16.04+
+* CentOS6+
+
 ## Installation
+
+Please adopt installation option depends on your Python environment.
 
 ```
 pip install -U sshkernel
 python -m sshkernel install [--user|--sys-prefix]
-# Type `python -m sshkernel install --help` for more information.
+# `python -m sshkernel install --help` for more information.
+```
+
+Verify that sshkernel is installed correctly by listing available Jupyter kernel specs:
+
+```
+$ jupyter kernelspec list
+Available kernels:
+  python3        /tmp/env/share/jupyter/kernels/python3
+  ssh            /tmp/env/share/jupyter/kernels/ssh  # <--
+
+  (Path differs depends on environment)
 ```
 
 To upgrade:
@@ -31,9 +56,17 @@ jupyter kernelspec remove ssh
 pip uninstall sshkernel
 ```
 
+### Notes about python environment
+
+The latest version of this library is mainly developed with Python 3.7.3 installed with `pyenv`.
+
+CI is performed with Python3.6 and 3.7 on [Debian based container without conda](https://hub.docker.com/_/python),
+and manual test is performed with Ubuntu based container with conda, which derived from [official Jupyter Notebook stack](https://hub.docker.com/r/jupyter/minimal-notebook/).
+`Anaconda` on Windows 10 is also confirmed, but is less tested in our development/production.
+
 ## Getting Started
 
-Basic examples of using SSH Kernel.
+Basic examples of using SSH Kernel:
 
 * [Getting Started](https://github.com/NII-cloud-operation/sshkernel/blob/master/examples/getting-started.ipynb)
 * [Getting Started (in Japanese)](https://github.com/NII-cloud-operation/sshkernel/blob/master/examples/getting-started-ja.ipynb)
