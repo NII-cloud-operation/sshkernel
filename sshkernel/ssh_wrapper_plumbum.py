@@ -1,10 +1,8 @@
-from types import MappingProxyType
 import os
 import time
 import yaml
 
 import paramiko
-from plumbum.commands.base import shquote
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
 from .ssh_wrapper import SSHWrapper
@@ -16,9 +14,7 @@ class SSHWrapperPlumbum(SSHWrapper):
     """
 
     def __init__(self, envdelta_init=dict()):
-        self.envdelta_init = MappingProxyType(
-            dict((k, shquote(v)) for k, v in envdelta_init.items())
-        )
+        self.envdelta_init = envdelta_init
         self._remote = None
         self._connected = False
         self._host = ""
@@ -138,15 +134,14 @@ class SSHWrapperPlumbum(SSHWrapper):
 
     def update_env(self, newenv):
         delimiter = "^@"
+        reject_env_variables = ["SSH_CLIENT", "SSH_CONNECTION"]
+
         parsed_newenv = dict([kv.split("=", 1) for kv in newenv.split(delimiter) if kv])
+        parsed_newenv = {
+            k: v for k, v in parsed_newenv.items() if k not in reject_env_variables
+        }
 
-        #
-        # Although RemoteEnv.update() calls shquote() internally,
-        # it is ignored with ParamikoMachine.
-        # So I quote manually here.
-        quoted_newenv = dict([(k, shquote(v)) for k, v in parsed_newenv.items()])
-
-        self._remote.env.update(quoted_newenv)
+        self._remote.env.update(parsed_newenv)
 
     def _load_ssh_config_for_plumbum(self, filename, host):
         """Parse and postprocess ssh_config
