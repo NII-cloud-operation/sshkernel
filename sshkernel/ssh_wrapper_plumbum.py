@@ -134,7 +134,12 @@ class SSHWrapperPlumbum(SSHWrapper):
 
     def update_env(self, newenv):
         delimiter = "^@"
+        reject_env_variables = ["SSH_CLIENT", "SSH_CONNECTION"]
+
         parsed_newenv = dict([kv.split("=", 1) for kv in newenv.split(delimiter) if kv])
+        parsed_newenv = {
+            k: v for k, v in parsed_newenv.items() if k not in reject_env_variables
+        }
 
         self._remote.env.update(parsed_newenv)
 
