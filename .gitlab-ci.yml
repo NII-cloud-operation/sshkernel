@@ -3,6 +3,7 @@ image: python:latest
 stages:
   - test
   - test_readme_procedure
+  - lint
   - medium_test
   - release
 
@@ -49,6 +50,12 @@ python37:
     paths:
     - htmlcov
     expire_in: 1 month
+
+check_format:
+  image: python:3.7
+  stage: lint
+  script: tox -e black -- -v --check --diff sshkernel setup.py
+  allow_failure: true
 
 run_papermill:
   image: python:3.7

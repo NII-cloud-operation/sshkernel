@@ -8,7 +8,7 @@ from metakernel import Magic
 
 class SSHKernelMagics(Magic):
 
-    blacklist = re.compile(r'.*([^- %,\./:=_a-zA-Z\d@])')
+    blacklist = re.compile(r".*([^- %,\./:=_a-zA-Z\d@])")
 
     def line_login(self, host):
         """
@@ -28,7 +28,7 @@ class SSHKernelMagics(Magic):
 
         self.retval = None
         self.kernel.new_ssh_wrapper()
-        self.kernel.Print('[ssh] Login to {}...'.format(host))
+        self.kernel.Print("[ssh] Login to {}...".format(host))
 
         try:
             host = self.expand_parameters(host, self.kernel.get_params())
@@ -39,19 +39,21 @@ class SSHKernelMagics(Magic):
             tb = traceback.format_exc().splitlines()
 
             # (name, value, tb)
-            self.retval = ExceptionWrapper('SSHConnectionError', 'Login to {} failed.'.format(host), tb)
+            self.retval = ExceptionWrapper(
+                "SSHConnectionError", "Login to {} failed.".format(host), tb
+            )
         else:
-            self.kernel.Print('[ssh] Successfully logged in.')
+            self.kernel.Print("[ssh] Successfully logged in.")
 
     def line_logout(self):
-        '''
+        """
         %logout
 
         Logout and disconnect.
 
         Example:
             %logout
-        '''
+        """
 
         self.retval = None
 
@@ -59,10 +61,10 @@ class SSHKernelMagics(Magic):
 
         # TODO: Error handling
         self.kernel.sshwrapper.close()
-        self.kernel.Print('[ssh] Successfully logged out.')
+        self.kernel.Print("[ssh] Successfully logged out.")
 
     def line_param(self, variable, value):
-        '''
+        """
         %param VARIABLE VALUE
 
         Define a hostname/env variable.
@@ -81,7 +83,7 @@ class SSHKernelMagics(Magic):
 
             Out[3]:
             11.11.11.11
-        '''
+        """
         try:
             self.validate_value_string(value)
             self.kernel.set_param(variable, value)
@@ -93,7 +95,7 @@ class SSHKernelMagics(Magic):
             self.retval = ExceptionWrapper(ex_type.__name__, repr(exc.args), tb_format)
 
     def expand_parameters(self, string, params):
-        pattern = r'\{(.*?)\}'
+        pattern = r"\{(.*?)\}"
 
         def repl(match):
             param_name = match.group(1)
@@ -102,14 +104,14 @@ class SSHKernelMagics(Magic):
         return re.sub(pattern, repl, string)
 
     def validate_value_string(self, val_str):
-        '''Raise if given string contains invalid characters.
+        """Raise if given string contains invalid characters.
 
         Args:
             val_str (str)
 
         Raises:
             ValueError: If `val_str` matches `self.blacklist`
-        '''
+        """
         m = re.match(self.blacklist, str(val_str))
         if m:
             msg = "{val} contains invalid character {matched}. Valid characters are A-Z a-z 0-9 - % , . / : = _ @".format(
@@ -122,6 +124,7 @@ class SSHKernelMagics(Magic):
             return self.retval
         except AttributeError:
             return retval
+
 
 def register_magics(kernel):
     kernel.register_magics(SSHKernelMagics)
