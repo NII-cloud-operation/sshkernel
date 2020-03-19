@@ -24,14 +24,14 @@ class SSHKernelMagics(Magic):
         """
 
         self.retval = None
-        self.kernel.new_ssh_wrapper()
-        self.kernel.Print("[ssh] Login to {}...".format(host))
-
         try:
-            host = expand_parameters(host, self.kernel.get_params())
-            self.kernel.sshwrapper.connect(host)
-        except Exception as e:
+            self.kernel.Print("[ssh] Login to {}...".format(host))
+
+            expanded_host = expand_parameters(host, self.kernel.get_params())
+            self.kernel.do_login(expanded_host)
+        except Exception as exc:
             self.kernel.Error("[ssh] Login to {} failed.".format(host))
+            self.kernel.Error(exc)
 
             tb = traceback.format_exc().splitlines()
 
@@ -53,12 +53,7 @@ class SSHKernelMagics(Magic):
         """
 
         self.retval = None
-
-        # TODO: Using self.kernel is awkward
-
-        # TODO: Error handling
-        self.kernel.sshwrapper.close()
-        self.kernel.Print("[ssh] Successfully logged out.")
+        self.kernel.do_logout()
 
     def line_param(self, variable, value):
         """
