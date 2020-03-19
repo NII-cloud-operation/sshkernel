@@ -1,5 +1,6 @@
 /dist/
 /htmlcov/
+.mypy_cache/
 .tox/
 .vscode/
 

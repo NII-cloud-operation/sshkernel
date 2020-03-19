@@ -1,9 +1,7 @@
-image: python:latest
+image: python:3.7
 
 stages:
   - test
-  - test_readme_procedure
-  - lint
   - medium_test
   - release
 
@@ -29,8 +27,8 @@ before_script:
   - which python
   - which pip
 
-pip_install:
-  stage: test_readme_procedure
+run_setup_instruction:
+  stage: test
   script:
     - pip install -U .
     - python -m sshkernel install
@@ -43,7 +41,6 @@ python36:
   script: tox -e py36
 
 python37:
-  image: python:3.7
   stage: test
   script: tox -e py37
   artifacts:
@@ -52,13 +49,15 @@ python37:
     expire_in: 1 month
 
 check_format:
-  image: python:3.7
-  stage: lint
+  stage: test
   script: tox -e black -- -v --check --diff sshkernel setup.py
   allow_failure: true
 
+linting:
+  stage: test
+  script: tox -e linters || true
+
 run_papermill:
-  image: python:3.7
   stage: medium_test
   script:
     - pip install .
@@ -77,7 +76,6 @@ run_papermill:
 
 
 release_pypi_package:
-  image: python:3.7
   stage: release
   script: tox -e release
   artifacts:
