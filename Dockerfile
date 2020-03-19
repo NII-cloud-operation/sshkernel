@@ -7,6 +7,9 @@ RUN apt-get update \
 
 USER jovyan
 
+ADD requirements.txt /tmp/
+RUN pip install -r /tmp/requirements.txt
+
 ADD --chown=jovyan:users . /tmp/ssh
 
 RUN pip install -e /tmp/ssh
