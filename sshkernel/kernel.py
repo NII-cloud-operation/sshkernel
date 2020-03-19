@@ -86,6 +86,12 @@ class SSHKernel(MetaKernel):
 
         return self._parameters
 
+    def do_login(self, host: str):
+        """Establish a ssh connection to the host."""
+        self.do_logout()
+        self.sshwrapper = SSHWrapperPlumbum(self.get_params())
+        self.sshwrapper.connect(host)
+
     def new_ssh_wrapper(self):
         """
         Instanciate wrapper instance
@@ -93,20 +99,16 @@ class SSHKernel(MetaKernel):
         Call close() if exist.
         """
 
-        self.del_ssh_wrapper()
+        self.do_logout()
 
         self.sshwrapper = SSHWrapperPlumbum(self.get_params())
 
-    def del_ssh_wrapper(self):
-        """
-        Gracefully delete wrapper instance
-        """
-
+    def do_logout(self):
+        """Close the connection."""
         if self.sshwrapper:
             self.Print("[ssh] Closing existing connection.")
-
-            # TODO: error handling
-            self.sshwrapper.close()
+            self.sshwrapper.close()  # TODO: error handling
+            self.Print("[ssh] Successfully logged out.")
 
         self.sshwrapper = None
 
@@ -209,7 +211,7 @@ class SSHKernel(MetaKernel):
         # TODO: log message
         # self.Print('[INFO] Restart sshkernel ...')
 
-        self.del_ssh_wrapper()
+        self.do_logout()
         self._parameters = dict()
 
     def assert_connected(self):
