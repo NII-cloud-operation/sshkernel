@@ -1,15 +1,13 @@
-from logging import INFO
-from textwrap import dedent
-import os
 import re
 import sys
+import textwrap
 import traceback
-
-from ipykernel.kernelbase import Kernel
-from paramiko.ssh_exception import SSHException
+from logging import INFO
 
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
+
+from paramiko.ssh_exception import SSHException
 
 from . import __version__
 from .exception import SSHKernelNotConnectedException
@@ -27,7 +25,8 @@ class SSHKernel(MetaKernel):
     implementation = "sshkernel"
     implementation_version = __version__
     language = "bash"
-    language_info = {}
+    language_version = __version__
+    banner = "SSH kernel version {}".format(__version__)
     kernel_json = {
         "argv": [sys.executable, "-m", "sshkernel", "-f", "{connection_file}"],
         "display_name": "SSH",
@@ -36,20 +35,6 @@ class SSHKernel(MetaKernel):
         "env": {"PS1": "$"},
         "name": "ssh",
     }
-
-    @property
-    def language_version(self):
-        m = version_pat.search(self.banner)
-        return m.group(1)
-
-    _banner = None
-
-    @property
-    def banner(self):
-        if self._banner is None:
-            self._banner = "SSH kernel version {}".format(__version__)
-        return self._banner
-
     language_info = {
         "name": "ssh",
         "codemirror_mode": "shell",
@@ -66,7 +51,7 @@ class SSHKernel(MetaKernel):
         self._sshwrapper = value
 
     def get_usage(self):
-        return dedent(
+        return textwrap.dedent(
             """Usage:
 
         * Prepare `~/.ssh/config`
@@ -238,6 +223,3 @@ class SSHKernel(MetaKernel):
         elif not self.sshwrapper.isconnected():
             self.Error("[ssh] Not connected.")
             raise SSHKernelNotConnectedException
-
-    def Print(self, message):
-        super().Write(str(message) + "\n")
