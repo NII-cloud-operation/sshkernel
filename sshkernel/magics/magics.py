@@ -99,7 +99,13 @@ class SSHKernelMagics(Magic):
 
 
 def expand_parameters(host, params):
-    """Expand parameters in hostname."""
+    """Expand parameters in hostname.
+
+    Examples:
+    * "target{N}" => "target1"
+    * "{host}.{domain} => "host01.example.com"
+
+    """
     pattern = r"\{(.*?)\}"
 
     def repl(match):
