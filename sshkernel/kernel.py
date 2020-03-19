@@ -11,7 +11,6 @@ from paramiko.ssh_exception import SSHException
 
 from . import __version__
 from .exception import SSHKernelNotConnectedException
-from .magics import register_magics
 from .ssh_wrapper_plumbum import SSHWrapperPlumbum
 
 version_pat = re.compile(r"version (\d+(\.\d+)+)")
@@ -103,10 +102,6 @@ class SSHKernel(MetaKernel):
             self.Print("[ssh] Successfully logged out.")
 
         self.sshwrapper = None
-
-    def reload_magics(self):
-        super().reload_magics()
-        register_magics(self)
 
     # Implement base class method
     def do_execute_direct(self, code, silent=False):
