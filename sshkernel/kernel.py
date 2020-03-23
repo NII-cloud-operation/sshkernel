@@ -92,17 +92,6 @@ class SSHKernel(MetaKernel):
         self.sshwrapper = SSHWrapperPlumbum(self.get_params())
         self.sshwrapper.connect(host)
 
-    def new_ssh_wrapper(self):
-        """
-        Instanciate wrapper instance
-
-        Call close() if exist.
-        """
-
-        self.do_logout()
-
-        self.sshwrapper = SSHWrapperPlumbum(self.get_params())
-
     def do_logout(self):
         """Close the connection."""
         if self.sshwrapper:
