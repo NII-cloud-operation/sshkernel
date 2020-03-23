@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 
-with open("sshkernel/__init__.py", "rt", encoding="utf8") as f:
+with open("sshkernel/version.py", "rt", encoding="utf8") as f:
     version = re.search(r"__version__ = \"(.*?)\"", f.read()).group(1)
 
 

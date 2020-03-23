@@ -9,9 +9,9 @@ from metakernel import MetaKernel
 
 from paramiko.ssh_exception import SSHException
 
-from . import __version__
 from .exception import SSHKernelNotConnectedException
 from .ssh_wrapper_plumbum import SSHWrapperPlumbum
+from .version import __version__
 
 version_pat = re.compile(r"version (\d+(\.\d+)+)")
 
