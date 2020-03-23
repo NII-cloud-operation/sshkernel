@@ -62,9 +62,10 @@ class SSHKernel(MetaKernel):
         """
         )
 
-    def __init__(self, **kwargs):
+    def __init__(self, sshwrapper_class=SSHWrapperPlumbum, **kwargs):
         super().__init__(**kwargs)
 
+        self.__sshwrapper_class = sshwrapper_class
         self._sshwrapper = None
         self._parameters = dict()
 
@@ -89,7 +90,9 @@ class SSHKernel(MetaKernel):
     def do_login(self, host: str):
         """Establish a ssh connection to the host."""
         self.do_logout()
-        self.sshwrapper = SSHWrapperPlumbum(self.get_params())
+
+        wrapper = self.__sshwrapper_class(self.get_params())
+        self.sshwrapper = wrapper
         self.sshwrapper.connect(host)
 
     def do_logout(self):
