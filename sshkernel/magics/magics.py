@@ -7,9 +7,6 @@ from metakernel import Magic
 
 
 class SSHKernelMagics(Magic):
-
-    blacklist = re.compile(r".*([^- %,\./:=_a-zA-Z\d@])")
-
     def line_login(self, host):
         """
         %login HOST
@@ -27,14 +24,14 @@ class SSHKernelMagics(Magic):
         """
 
         self.retval = None
-        self.kernel.new_ssh_wrapper()
-        self.kernel.Print("[ssh] Login to {}...".format(host))
-
         try:
-            host = self.expand_parameters(host, self.kernel.get_params())
-            self.kernel.sshwrapper.connect(host)
-        except Exception as e:
+            self.kernel.Print("[ssh] Login to {}...".format(host))
+
+            expanded_host = expand_parameters(host, self.kernel.get_params())
+            self.kernel.do_login(expanded_host)
+        except Exception as exc:
             self.kernel.Error("[ssh] Login to {} failed.".format(host))
+            self.kernel.Error(exc)
 
             tb = traceback.format_exc().splitlines()
 
@@ -56,12 +53,7 @@ class SSHKernelMagics(Magic):
         """
 
         self.retval = None
-
-        # TODO: Using self.kernel is awkward
-
-        # TODO: Error handling
-        self.kernel.sshwrapper.close()
-        self.kernel.Print("[ssh] Successfully logged out.")
+        self.kernel.do_logout()
 
     def line_param(self, variable, value):
         """
@@ -85,7 +77,7 @@ class SSHKernelMagics(Magic):
             11.11.11.11
         """
         try:
-            self.validate_value_string(value)
+            validate_value_string(value)
             self.kernel.set_param(variable, value)
         except Exception as exc:
             # To propagate exception to frontend through metakernel
@@ -94,36 +86,48 @@ class SSHKernelMagics(Magic):
             tb_format = traceback.format_exc().splitlines()
             self.retval = ExceptionWrapper(ex_type.__name__, repr(exc.args), tb_format)
 
-    def expand_parameters(self, string, params):
-        pattern = r"\{(.*?)\}"
-
-        def repl(match):
-            param_name = match.group(1)
-            return params[param_name]
-
-        return re.sub(pattern, repl, string)
-
-    def validate_value_string(self, val_str):
-        """Raise if given string contains invalid characters.
-
-        Args:
-            val_str (str)
-
-        Raises:
-            ValueError: If `val_str` matches `self.blacklist`
-        """
-        m = re.match(self.blacklist, str(val_str))
-        if m:
-            msg = "{val} contains invalid character {matched}. Valid characters are A-Z a-z 0-9 - % , . / : = _ @".format(
-                val=repr(val_str), matched=repr(m.group(1))
-            )
-            raise ValueError(msg)
-
     def post_process(self, retval):
         try:
             return self.retval
         except AttributeError:
             return retval
+
+
+def expand_parameters(host, params):
+    """Expand parameters in hostname.
+
+    Examples:
+    * "target{N}" => "target1"
+    * "{host}.{domain} => "host01.example.com"
+
+    """
+    pattern = r"\{(.*?)\}"
+
+    def repl(match):
+        param_name = match.group(1)
+        return params[param_name]
+
+    return re.sub(pattern, repl, host)
+
+
+blacklist = re.compile(r".*([^- %,\./:=_a-zA-Z\d@])")
+
+
+def validate_value_string(val_str):
+    """Raise if given string contains invalid characters.
+
+    Args:
+        val_str (str)
+
+    Raises:
+        ValueError: If `val_str` matches `blacklist`
+    """
+    m = re.match(blacklist, str(val_str))
+    if m:
+        msg = "{val} contains invalid character {matched}. Valid characters are A-Z a-z 0-9 - % , . / : = _ @".format(
+            val=repr(val_str), matched=repr(m.group(1))
+        )
+        raise ValueError(msg)
 
 
 def register_magics(kernel):

@@ -1,20 +1,17 @@
-from logging import INFO
-from textwrap import dedent
-import os
 import re
 import sys
+import textwrap
 import traceback
-
-from ipykernel.kernelbase import Kernel
-from paramiko.ssh_exception import SSHException
+from logging import INFO
 
 from metakernel import ExceptionWrapper
 from metakernel import MetaKernel
 
-from . import __version__
+from paramiko.ssh_exception import SSHException
+
 from .exception import SSHKernelNotConnectedException
-from .magics import register_magics
 from .ssh_wrapper_plumbum import SSHWrapperPlumbum
+from .version import __version__
 
 version_pat = re.compile(r"version (\d+(\.\d+)+)")
 
@@ -27,7 +24,8 @@ class SSHKernel(MetaKernel):
     implementation = "sshkernel"
     implementation_version = __version__
     language = "bash"
-    language_info = {}
+    language_version = __version__
+    banner = "SSH kernel version {}".format(__version__)
     kernel_json = {
         "argv": [sys.executable, "-m", "sshkernel", "-f", "{connection_file}"],
         "display_name": "SSH",
@@ -36,20 +34,6 @@ class SSHKernel(MetaKernel):
         "env": {"PS1": "$"},
         "name": "ssh",
     }
-
-    @property
-    def language_version(self):
-        m = version_pat.search(self.banner)
-        return m.group(1)
-
-    _banner = None
-
-    @property
-    def banner(self):
-        if self._banner is None:
-            self._banner = "SSH kernel version {}".format(__version__)
-        return self._banner
-
     language_info = {
         "name": "ssh",
         "codemirror_mode": "shell",
@@ -66,7 +50,7 @@ class SSHKernel(MetaKernel):
         self._sshwrapper = value
 
     def get_usage(self):
-        return dedent(
+        return textwrap.dedent(
             """Usage:
 
         * Prepare `~/.ssh/config`
@@ -77,9 +61,10 @@ class SSHKernel(MetaKernel):
         """
         )
 
-    def __init__(self, **kwargs):
+    def __init__(self, sshwrapper_class=SSHWrapperPlumbum, **kwargs):
         super().__init__(**kwargs)
 
+        self.__sshwrapper_class = sshwrapper_class
         self._sshwrapper = None
         self._parameters = dict()
 
@@ -101,39 +86,28 @@ class SSHKernel(MetaKernel):
 
         return self._parameters
 
-    def new_ssh_wrapper(self):
-        """
-        Instanciate wrapper instance
+    def do_login(self, host: str):
+        """Establish a ssh connection to the host."""
+        self.do_logout()
 
-        Call close() if exist.
-        """
+        wrapper = self.__sshwrapper_class(self.get_params())
+        self.sshwrapper = wrapper
+        self.sshwrapper.connect(host)
 
-        self.del_ssh_wrapper()
-
-        self.sshwrapper = SSHWrapperPlumbum(self.get_params())
-
-    def del_ssh_wrapper(self):
-        """
-        Gracefully delete wrapper instance
-        """
-
+    def do_logout(self):
+        """Close the connection."""
         if self.sshwrapper:
             self.Print("[ssh] Closing existing connection.")
-
-            # TODO: error handling
-            self.sshwrapper.close()
+            self.sshwrapper.close()  # TODO: error handling
+            self.Print("[ssh] Successfully logged out.")
 
         self.sshwrapper = None
-
-    def reload_magics(self):
-        super().reload_magics()
-        register_magics(self)
 
     # Implement base class method
     def do_execute_direct(self, code, silent=False):
         try:
             self.assert_connected()
-        except SSHKernelNotConnectedException as e:
+        except SSHKernelNotConnectedException:
             self.Error(traceback.format_exc())
             return ExceptionWrapper("abort", "not connected", [])
 
@@ -158,10 +132,11 @@ class SSHKernel(MetaKernel):
         if exitcode:
             ename = "abnormal exit code"
             evalue = str(exitcode)
-            if "tb" not in locals():
-                tb = [""]
+            trace = [""]
 
-            return ExceptionWrapper(ename, evalue, tb)
+            return ExceptionWrapper(ename, evalue, trace)
+
+        return None
 
     # Implement ipykernel method
     def do_complete(self, code, cursor_pos):
@@ -174,7 +149,7 @@ class SSHKernel(MetaKernel):
         }
         try:
             self.assert_connected()
-        except SSHKernelNotConnectedException as e:
+        except SSHKernelNotConnectedException:
             # TODO: Error() in `do_complete` not shown in notebook
             self.log.error("not connected")
             return default
@@ -195,7 +170,10 @@ class SSHKernel(MetaKernel):
             # strip leading $
             cmd = "compgen -A arrayvar -A export -A variable %s" % token[1:]
             completions = set()
-            callback = lambda line: completions.add(line.rstrip())
+
+            def callback(line):
+                completions.add(line.rstrip())
+
             self.sshwrapper.exec_command(cmd, callback)
 
             # append matches including leading $
@@ -204,7 +182,10 @@ class SSHKernel(MetaKernel):
             # complete functions and builtins
             cmd = "compgen -cdfa %s" % token
             matches = set()
-            callback = lambda line: matches.add(line.rstrip())
+
+            def callback(line):
+                matches.add(line.rstrip())
+
             self.sshwrapper.exec_command(cmd, callback)
 
         matches = [m for m in matches if m.startswith(token)]
@@ -224,7 +205,7 @@ class SSHKernel(MetaKernel):
         # TODO: log message
         # self.Print('[INFO] Restart sshkernel ...')
 
-        self.del_ssh_wrapper()
+        self.do_logout()
         self._parameters = dict()
 
     def assert_connected(self):
@@ -235,9 +216,7 @@ class SSHKernel(MetaKernel):
         if self.sshwrapper is None:
             self.Error("[ssh] Not logged in.")
             raise SSHKernelNotConnectedException
-        elif not self.sshwrapper.isconnected():
+
+        if not self.sshwrapper.isconnected():
             self.Error("[ssh] Not connected.")
             raise SSHKernelNotConnectedException
-
-    def Print(self, message):
-        super().Write(str(message) + "\n")

@@ -1,70 +1,65 @@
-from unittest.mock import Mock
-import io
 import unittest
+from unittest.mock import Mock
 
-from metakernel import Magic
-
-from sshkernel import ExceptionWrapper
-from sshkernel import SSHException
 from sshkernel.kernel import SSHKernel
-from sshkernel.magics import SSHKernelMagics
+from sshkernel.magics.magics import SSHKernelMagics
+from sshkernel.magics.magics import expand_parameters
+from sshkernel.magics.magics import validate_value_string
+
+from paramiko import AuthenticationException
 
 
 class MagicTest(unittest.TestCase):
-
     def setUp(self):
         kernel = Mock(spec=SSHKernel)
         instance = SSHKernelMagics(kernel=kernel)
         self.kernel = kernel
         self.instance = instance
 
-    def test_login_should_call_connect(self):
+    def test_login_should_call_do_login(self):
         host = "dummy"
         self.instance.line_login(host)
 
-        self.kernel.sshwrapper.connect.assert_called_once_with(host)
+        self.kernel.do_login.assert_called_once_with(host)
+        self.assertIsNone(self.instance.retval)
 
-    def test_logout_should_call_close(self):
+    def test_logout_should_call_logout(self):
         self.instance.line_logout()
 
-        self.kernel.sshwrapper.close.assert_called_once_with()
+        self.kernel.do_logout.assert_called_once_with()
 
-    def test_login_without_host_raise_type_exception(self):
-        with self.assertRaises(TypeError):
-            self.instance.line_login()
+    def test_login_with_exception_set_retval(self):
+        self.kernel.do_login = Mock(side_effect=AuthenticationException)
 
-    def test_login_set_retval_none(self):
-        noreturn = self.instance.line_login('dummy')
-
-        self.assertIsNone(noreturn)
-        self.assertIsNone(self.instance.retval)
+        self.instance.line_login("dummy")
+        self.assertIsNotNone(self.instance.retval)
 
     def test_expand_parameters(self):
         params = dict(A="1", B="3")
-        s = '{A}2{B}'
+        s = "{A}2{B}"
 
-        ret = self.instance.expand_parameters(s, params)
+        ret = expand_parameters(s, params)
         self.assertEqual(ret, "123")
 
     def test_expand_parameters_raise(self):
         with self.assertRaises(KeyError):
-            self.instance.expand_parameters('{NOTFOUND}', {})
+            expand_parameters("{NOTFOUND}", {})
 
     def test_expand_parameters_with_unclosed_string(self):
-        ret = self.instance.expand_parameters('{YO', {})
-        self.assertEqual(ret, '{YO')
+        ret = expand_parameters("{YO", {})
+        self.assertEqual(ret, "{YO")
 
     def test_validate_value_string(self):
-        func = self.instance.validate_value_string
+        func = validate_value_string
 
         ok_cases = [
-            'abc 123%@-',
+            "abc 123%@-",
         ]
         ng_cases = [
-            'ABC ###',
+            "ABC ###",
             'ABC"',
-            'ABC()',
-            'ABC${}',
+            "ABC()",
+            "ABC${}",
         ]
 
         for ok in ok_cases:
