@@ -112,7 +112,7 @@ class SSHKernel(MetaKernel):
     def do_execute_direct(self, code, silent=False):
         try:
             self.assert_connected()
-        except SSHKernelNotConnectedException as e:
+        except SSHKernelNotConnectedException:
             self.Error(traceback.format_exc())
             return ExceptionWrapper("abort", "not connected", [])
 
@@ -137,10 +137,11 @@ class SSHKernel(MetaKernel):
         if exitcode:
             ename = "abnormal exit code"
             evalue = str(exitcode)
-            if "tb" not in locals():
-                tb = [""]
+            trace = [""]
 
-            return ExceptionWrapper(ename, evalue, tb)
+            return ExceptionWrapper(ename, evalue, trace)
+
+        return None
 
     # Implement ipykernel method
     def do_complete(self, code, cursor_pos):
@@ -153,7 +154,7 @@ class SSHKernel(MetaKernel):
         }
         try:
             self.assert_connected()
-        except SSHKernelNotConnectedException as e:
+        except SSHKernelNotConnectedException:
             # TODO: Error() in `do_complete` not shown in notebook
             self.log.error("not connected")
             return default
@@ -174,7 +175,10 @@ class SSHKernel(MetaKernel):
             # strip leading $
             cmd = "compgen -A arrayvar -A export -A variable %s" % token[1:]
             completions = set()
-            callback = lambda line: completions.add(line.rstrip())
+
+            def callback(line):
+                completions.add(line.rstrip())
+
             self.sshwrapper.exec_command(cmd, callback)
 
             # append matches including leading $
@@ -183,7 +187,10 @@ class SSHKernel(MetaKernel):
             # complete functions and builtins
             cmd = "compgen -cdfa %s" % token
             matches = set()
-            callback = lambda line: matches.add(line.rstrip())
+
+            def callback(line):
+                matches.add(line.rstrip())
+
             self.sshwrapper.exec_command(cmd, callback)
 
         matches = [m for m in matches if m.startswith(token)]
@@ -214,6 +221,7 @@ class SSHKernel(MetaKernel):
         if self.sshwrapper is None:
             self.Error("[ssh] Not logged in.")
             raise SSHKernelNotConnectedException
-        elif not self.sshwrapper.isconnected():
+
+        if not self.sshwrapper.isconnected():
             self.Error("[ssh] Not connected.")
             raise SSHKernelNotConnectedException
