@@ -1,13 +1,14 @@
 from setuptools import setup
-import re
 
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 
-with open("sshkernel/version.py", "rt", encoding="utf8") as f:
-    version = re.search(r"__version__ = \"(.*?)\"", f.read()).group(1)
+version = {}
+with open("sshkernel/version.py") as f:
+    exec(f.read(), version)
+# later on we use: version['__version__']
 
 
 def _requirements():
@@ -16,7 +17,7 @@ def _requirements():
 
 setup(
     name="sshkernel",
-    version=version,
+    version=version["__version__"],
     author="UENO, Masaru",
     author_email="ueno.masaru@fujitsu.com",
     description="SSH Kernel",
