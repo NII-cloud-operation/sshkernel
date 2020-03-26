@@ -235,6 +235,7 @@ line3{marker}code: 0{marker}
                         port=None,
                         user="testuser",
                         keyfile=[os.path.expanduser("~/.ssh/id_rsa_test")],
+                        load_system_ssh_config=False,
                     ),
                     None,
                 ),
@@ -267,13 +268,33 @@ line3{marker}code: 0{marker}
                 input=dedent(
                     """
                     Host test
+                        User admin
+                        Port 2222
                         IdentityFile ~/.ssh/id_rsa_test
-                        ProxyCommand ssh -W %h:%p hostX
+                        ProxyCommand ssh -W %h:%p target
                     """
                 ),
-                expect=("test", skip, None),
+                expect=(
+                    "test",
+                    dict(
+                        user="admin",
+                        port=2222,
+                        keyfile=[os.path.expanduser("~/.ssh/id_rsa_test")],
+                        load_system_ssh_config=True,
+                    ),
+                    None,
+                ),
             ),
         ]
+
+        case_raises = dedent(
+            """
+            Host test
+                User user
+                Hostname bastion
+                ProxyCommand ssh -W %h:%p target
+            """
+        )
 
         for case in cases:
             input, expect = case["input"], case["expect"]
@@ -286,5 +307,15 @@ line3{marker}code: 0{marker}
 
             self.assertEqual(hostname, got[0])
             if lookup is not skip:
+                # can't assert missin_host_policy equality
+                lookup["missing_host_policy"] = got[1].get("missing_host_policy")
                 self.assertDictEqual(lookup, got[1])
+
             self.assertEqual(forward, got[2])
+
+        with tempfile.NamedTemporaryFile("w") as f:
+            f.write(case_raises)
+            f.seek(0)
+            host = "test"
+            with self.assertRaises(ValueError):
+                _ = load_ssh_config_for_plumbum(f.name, host)
