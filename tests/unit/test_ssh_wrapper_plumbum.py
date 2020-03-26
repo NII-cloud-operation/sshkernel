@@ -9,6 +9,7 @@ from plumbum.machines.paramiko_machine import ParamikoMachine
 
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 from sshkernel.ssh_wrapper_plumbum import append_footer
+from sshkernel.ssh_wrapper_plumbum import load_ssh_config_for_plumbum
 from sshkernel.ssh_wrapper_plumbum import merge_stdout_stderr
 from sshkernel.ssh_wrapper_plumbum import process_output
 
@@ -96,7 +97,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup, forward) = self.instance._load_ssh_config_for_plumbum(
+            (hostname, lookup, forward) = load_ssh_config_for_plumbum(
                 f.name, "test"
             )
 
@@ -116,7 +117,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup, _) = self.instance._load_ssh_config_for_plumbum(
+            (hostname, lookup, _) = load_ssh_config_for_plumbum(
                 f.name, "test2"
             )
 
@@ -141,7 +142,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup, forward) = self.instance._load_ssh_config_for_plumbum(
+            (hostname, lookup, forward) = load_ssh_config_for_plumbum(
                 f.name, "test3"
             )
 
