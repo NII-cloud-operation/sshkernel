@@ -16,20 +16,23 @@ from sshkernel.ssh_wrapper_plumbum import process_output
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
     def setUp(self):
-        subscriptable = Mock()
-        subscriptable.popen = Mock(return_value=subscriptable)
-        subscriptable.__getitem__ = Mock(return_value=subscriptable)
-        subscriptable.iter_lines = Mock(
-            return_value=([("output", None), (None, "err")])
-        )
+        def new_test_instance():
+            subscriptable = Mock()
+            subscriptable.popen = Mock(return_value=subscriptable)
+            subscriptable.__getitem__ = Mock(return_value=subscriptable)
+            subscriptable.iter_lines = Mock(
+                return_value=([("output", None), (None, "err")])
+            )
 
-        remote_double = Mock(spec=ParamikoMachine)
-        remote_double.__getitem__ = Mock(return_value=subscriptable)
+            remote_double = Mock(spec=ParamikoMachine)
+            remote_double.__getitem__ = Mock(return_value=subscriptable)
 
-        instance = SSHWrapperPlumbum()
-        instance._remote = remote_double
+            instance = SSHWrapperPlumbum()
+            instance._remote = remote_double
 
-        self.instance = instance
+            return instance
+
+        self.instance = new_test_instance()
 
     def test_connect_should_raise_socket_error(self):
         # FIXME: fix setUp() to pass the line below
@@ -55,7 +58,6 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
     @unittest.skip("fix setUp")
     def test_exec_command_returns_error_at_first(self):
-        print_mock = Mock()
         with self.assertRaises(socket.gaierror):
             self.instance.exec_command("yo", lambda line: None)
 
@@ -97,9 +99,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup, forward) = load_ssh_config_for_plumbum(
-                f.name, "test"
-            )
+            (hostname, lookup, forward) = load_ssh_config_for_plumbum(f.name, "test")
 
             self.assertIsInstance(lookup, dict)
             self.assertEqual(hostname, "127.0.0.10")
@@ -117,9 +117,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup, _) = load_ssh_config_for_plumbum(
-                f.name, "test2"
-            )
+            (hostname, lookup, _) = load_ssh_config_for_plumbum(f.name, "test2")
 
             self.assertIsInstance(lookup, dict)
             self.assertEqual(hostname, "test2")
@@ -142,9 +140,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
 
             f.seek(0)
 
-            (hostname, lookup, forward) = load_ssh_config_for_plumbum(
-                f.name, "test3"
-            )
+            (hostname, lookup, forward) = load_ssh_config_for_plumbum(f.name, "test3")
 
             self.assertEqual(set(lookup.keys()), set(["user", "port", "keyfile"]))
 
@@ -282,4 +278,3 @@ line3{marker}code: 0{marker}
         print_function.assert_any_call("line2\n")
         print_function.assert_any_call("line3")  # without newline
         self.assertEqual(env_info, "code: 0\npwd: /tmp\n")
-
