@@ -1,9 +1,11 @@
 import os
 import time
-import yaml
 
 import paramiko
+
 from plumbum.machines.paramiko_machine import ParamikoMachine
+
+import yaml
 
 from .ssh_wrapper import SSHWrapper
 
