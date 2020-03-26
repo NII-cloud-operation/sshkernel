@@ -37,7 +37,7 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
     def test_connect_should_raise_socket_error(self):
         # FIXME: fix setUp() to pass the line below
         # self.assertIsNone(self.instance._remote)
-        self.assertFalse(self.instance._connected)
+        self.assertFalse(self.instance.isconnected())
 
         with self.assertRaises(socket.gaierror):
             self.instance.connect("dummy")
@@ -47,12 +47,12 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
         self.instance._build_remote = Mock(return_value=remote_double)
         dummy = "dummy"
         # self.assertIsNone(self.instance._remote)
-        self.assertFalse(self.instance._connected)
+        self.assertFalse(self.instance.isconnected())
         self.assertEqual(self.instance._host, "")
 
         self.instance.connect(dummy)
 
-        self.assertTrue(self.instance._connected)
+        self.assertTrue(self.instance.isconnected())
         self.assertEqual(self.instance._host, dummy)
         remote_double.env.update.assert_called()
 
