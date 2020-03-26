@@ -1,5 +1,7 @@
 import io
+import os
 import socket
+import tempfile
 import unittest
 from textwrap import dedent
 from unittest.mock import Mock
@@ -81,70 +83,6 @@ class SSHWrapperPlumbumTest(unittest.TestCase):
         self.instance.close()
 
         mock.assert_called_once()
-
-    def test_load_ssh_config_for_plumbum(self):
-        import tempfile
-
-        with tempfile.NamedTemporaryFile("w") as f:
-            f.write(
-                dedent(
-                    """
-            Host test
-                HostName 127.0.0.10
-                User testuser
-                IdentityFile ~/.ssh/id_rsa_test
-            """
-                )
-            )
-
-            f.seek(0)
-
-            (hostname, lookup, forward) = load_ssh_config_for_plumbum(f.name, "test")
-
-            self.assertIsInstance(lookup, dict)
-            self.assertEqual(hostname, "127.0.0.10")
-            self.assertIsNone(forward)
-
-        with tempfile.NamedTemporaryFile("w") as f:
-            f.write(
-                dedent(
-                    """
-            Host test2
-                IdentityFile ~/.ssh/id_rsa_test
-            """
-                )
-            )
-
-            f.seek(0)
-
-            (hostname, lookup, _) = load_ssh_config_for_plumbum(f.name, "test2")
-
-            self.assertIsInstance(lookup, dict)
-            self.assertEqual(hostname, "test2")
-
-        with tempfile.NamedTemporaryFile("w") as f:
-            f.write(
-                dedent(
-                    """
-            Host test3
-                User admin
-                Port 2222
-                HostName 1.2.3.4
-                IdentityFile ~/.ssh/id_rsa_test
-
-            Host *
-                ForwardAgent yes
-            """
-                )
-            )
-
-            f.seek(0)
-
-            (hostname, lookup, forward) = load_ssh_config_for_plumbum(f.name, "test3")
-
-            self.assertEqual(set(lookup.keys()), set(["user", "port", "keyfile"]))
-
-            self.assertEqual(forward, "yes")
 
     def test_append_footer(self):
         cmd = """
@@ -278,3 +216,75 @@ line3{marker}code: 0{marker}
         print_function.assert_any_call("line2\n")
         print_function.assert_any_call("line3")  # without newline
         self.assertEqual(env_info, "code: 0\npwd: /tmp\n")
+
+    def test_load_ssh_config_for_plumbum(self):
+        skip = "skip_dict_equality_test"
+        cases = [
+            dict(
+                input=dedent(
+                    """
+                    Host test
+                        HostName 127.0.0.10
+                        User testuser
+                        IdentityFile ~/.ssh/id_rsa_test
+                    """
+                ),
+                expect=(
+                    "127.0.0.10",
+                    dict(
+                        port=None,
+                        user="testuser",
+                        keyfile=[os.path.expanduser("~/.ssh/id_rsa_test")],
+                    ),
+                    None,
+                ),
+            ),
+            dict(
+                input=dedent(
+                    """
+                    Host test
+                        IdentityFile ~/.ssh/id_rsa_test
+                    """
+                ),
+                expect=("test", skip, None),
+            ),
+            dict(
+                input=dedent(
+                    """
+                    Host test
+                        User admin
+                        Port 2222
+                        HostName 1.2.3.4
+                        IdentityFile ~/.ssh/id_rsa_test
+
+                    Host *
+                        ForwardAgent yes
+                    """
+                ),
+                expect=("1.2.3.4", skip, "yes"),
+            ),
+            dict(
+                input=dedent(
+                    """
+                    Host test
+                        IdentityFile ~/.ssh/id_rsa_test
+                        ProxyCommand ssh -W %h:%p hostX
+                    """
+                ),
+                expect=("test", skip, None),
+            ),
+        ]
+
+        for case in cases:
+            input, expect = case["input"], case["expect"]
+            (hostname, lookup, forward) = expect
+            with tempfile.NamedTemporaryFile("w") as f:
+                f.write(input)
+                f.seek(0)
+                host = "test"
+                got = load_ssh_config_for_plumbum(f.name, host)
+
+            self.assertEqual(hostname, got[0])
+            if lookup is not skip:
+                self.assertDictEqual(lookup, got[1])
+            self.assertEqual(forward, got[2])
