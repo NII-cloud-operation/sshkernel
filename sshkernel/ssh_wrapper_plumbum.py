@@ -13,6 +13,11 @@ from .ssh_wrapper import SSHWrapper
 class SSHWrapperPlumbum(SSHWrapper):
     """
     A plumbum remote machine wrapper
+    SSHWrapperPlumbum wraps ssh client.
+
+    Attributes:
+    * ._remote : plumbum.machines.paramiko_machine.ParamikoMachine
+    * ._remote._client: paramiko.SSHClient
     """
 
     def __init__(self, envdelta_init=dict()):
@@ -224,6 +229,7 @@ def enable_agent_forwarding(paramiko_sshclient):
 
 def load_ssh_config_for_plumbum(filename, host):
     """Parse and postprocess ssh_config
+    and rename some keys for plumbum.ParamikoMachine.__init__()
     """
 
     conf = paramiko.config.SSHConfig()
@@ -235,12 +241,20 @@ def load_ssh_config_for_plumbum(filename, host):
 
     lookup = conf.lookup(host)
 
-    plumbum_kwargs = dict(user=None, port=None, keyfile=None)
+    plumbum_kwargs = dict(
+        user=None,
+        port=None,
+        keyfile=None,
+        load_system_ssh_config=False,
+        # TODO: Drop WarningPolicy
+        # This is need in current plumbum and wrapper implementation
+        # in case proxycommand is set.
+        missing_host_policy=paramiko.WarningPolicy(),
+    )
 
+    plumbum_host = host
     if "hostname" in lookup:
-        plumbum_hostname = lookup.pop("hostname")
-    else:
-        plumbum_hostname = host
+        plumbum_host = lookup.get("hostname")
 
     if "port" in lookup:
         plumbum_kwargs["port"] = int(lookup["port"])
@@ -248,6 +262,23 @@ def load_ssh_config_for_plumbum(filename, host):
     plumbum_kwargs["user"] = lookup.get("user")
     plumbum_kwargs["keyfile"] = lookup.get("identityfile")
 
+    if "proxycommand" in lookup:
+        plumbum_kwargs["load_system_ssh_config"] = True
+        # load_system_ssh_config: read system SSH config for ProxyCommand configuration.
+        # https://plumbum.readthedocs.io/en/latest/_modules/plumbum/machines/paramiko_machine.html
+
+        if lookup.get("hostname") != host:
+            msg = (
+                "can't handle both ProxyCommand and HostName at once, "
+                "please drop either"
+            )
+            raise ValueError(msg)
+        plumbum_host = host
+        # When load_system_ssh_config is True, plumbum_host must be Host
+        # instead of HostName.
+        # Otherwise parsing SSH config will fail in Plumbum.
+
+    # Plumbum doesn't support agent-forwarding
     forward_agent = lookup.get("forwardagent")
 
-    return (plumbum_hostname, plumbum_kwargs, forward_agent)
+    return (plumbum_host, plumbum_kwargs, forward_agent)
