@@ -1,18 +1,12 @@
-from textwrap import dedent
-from unittest.mock import Mock
-from unittest.mock import PropertyMock
-from unittest.mock import patch
 import io
 import socket
 import unittest
+from textwrap import dedent
+from unittest.mock import Mock
+from unittest.mock import patch
 
-import paramiko
-import plumbum
 from plumbum.machines.paramiko_machine import ParamikoMachine
 
-from sshkernel import ExceptionWrapper
-from sshkernel import SSHException
-from sshkernel.ssh_wrapper import SSHWrapper
 from sshkernel.ssh_wrapper_plumbum import SSHWrapperPlumbum
 from sshkernel.ssh_wrapper_plumbum import append_footer
 from sshkernel.ssh_wrapper_plumbum import merge_stdout_stderr
@@ -21,9 +15,6 @@ from sshkernel.ssh_wrapper_plumbum import process_output
 
 class SSHWrapperPlumbumTest(unittest.TestCase):
     def setUp(self):
-        closed = True
-        connected = False
-
         subscriptable = Mock()
         subscriptable.popen = Mock(return_value=subscriptable)
         subscriptable.__getitem__ = Mock(return_value=subscriptable)
