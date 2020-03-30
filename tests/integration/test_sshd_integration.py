@@ -4,8 +4,23 @@ import unittest
 
 import papermill as pm
 
+from sshkernel.kernel import SSHKernel
+
 
 class SSHDIntegrationTests(unittest.TestCase):
+    def test_proxycommand(self):
+        """
+        # Expect the config below
+        Host localhost
+            User root
+            Port 22
+            IdentityFile {keyfile}
+            ProxyCommand ssh -W %h:%p {bastion}
+        """
+        kernel = SSHKernel()
+        kernel.do_login("localhost")
+        kernel.assert_connected()
+
     def list_notebooks(self):
         here = os.path.dirname(__file__)
         nbs = glob.glob("{}/*.ipynb".format(here))
