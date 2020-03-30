@@ -31,6 +31,42 @@ Host {host}
     print("wrote {target}".format(target=target))
 
 
+def setup_remotecommand(keyfile):
+    """Setup proxycommand config.
+    terminal -- bastion -- target
+    * terminal is the main container (py37)
+    * bastion is root@ubuntu
+    * target is root@localhost
+
+    bastion and target is the same container
+    because GitLab CI doesn't support inter-service name resolution currently.
+
+    * add ssh_config entry in terminal with proxycommand
+    """
+    config = """
+# target from bastion
+Host {target}
+    User root
+    Port 22
+    IdentityFile {keyfile}
+    ProxyCommand ssh -W %h:%p {bastion}
+""".format(
+        target="localhost", bastion="ubuntu18", keyfile=keyfile,
+    )
+    with open(os.path.expanduser("~/.ssh/config"), "a") as f:
+        f.write(config)
+
+    print("wrote proxycommand config")
+
+    print(_run("ssh ubuntu18 \"ssh-keygen -f ~/.ssh/id_rsa -N ''\""))
+    print(_run('ssh ubuntu18 "ssh-keyscan -H localhost >> ~/.ssh/known_hosts"'))
+    print(_run("ssh ubuntu18 -- 'apt-get update && apt-get install -y sshpass'"))
+    print(_run("ssh ubuntu18 -- sshpass -p root ssh-copy-id localhost"))
+
+    print(_run("ssh ubuntu18 'env |grep SSH'"))
+    print(_run("ssh ubuntu18 'ssh localhost \"env |grep SSH\"'"))
+
+
 def update_known_hosts(host):
     cmd = "ssh-keyscan -H {host} >> ~/.ssh/known_hosts".format(host=host)
     buf = _run(cmd)
@@ -82,6 +118,7 @@ def main():
 
         check_login(host)
 
+    setup_remotecommand(keyfile)
     install_sshkernel()
 
 
