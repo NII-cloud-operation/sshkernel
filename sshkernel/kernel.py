@@ -91,8 +91,8 @@ class SSHKernel(MetaKernel):
         self.do_logout()
 
         wrapper = self.__sshwrapper_class(self.get_params())
+        wrapper.connect(host)
         self.sshwrapper = wrapper
-        self.sshwrapper.connect(host)
 
     def do_logout(self):
         """Close the connection."""
