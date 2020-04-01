@@ -1,9 +1,11 @@
 import os
 import time
-import yaml
 
 import paramiko
+
 from plumbum.machines.paramiko_machine import ParamikoMachine
+
+import yaml
 
 from .ssh_wrapper import SSHWrapper
 
@@ -11,12 +13,17 @@ from .ssh_wrapper import SSHWrapper
 class SSHWrapperPlumbum(SSHWrapper):
     """
     A plumbum remote machine wrapper
+    SSHWrapperPlumbum wraps ssh client.
+
+    Attributes:
+    * ._remote : plumbum.machines.paramiko_machine.ParamikoMachine
+    * ._remote._client: paramiko.SSHClient
     """
 
     def __init__(self, envdelta_init=dict()):
         self.envdelta_init = envdelta_init
         self._remote = None
-        self._connected = False
+        self.__connected = False
         self._host = ""
         self.interrupt_function = lambda: None
 
@@ -57,17 +64,11 @@ class SSHWrapperPlumbum(SSHWrapper):
         remote.env.update(envdelta)
 
         self._remote = remote
-        self._connected = True
+        self.__connected = True
         self._host = host
 
-    def _forward_local_agent(self, paramiko_client):
-        # SSH Agent Forwarding in Paramiko
-        # http://docs.paramiko.org/en/2.4/api/agent.html
-        sess = paramiko_client.get_transport().open_session()
-        paramiko.agent.AgentRequestHandler(sess)
-
     def _build_remote(self, host):
-        (hostname, plumbum_kwargs, forward_agent) = self._load_ssh_config_for_plumbum(
+        (hostname, plumbum_kwargs, forward_agent) = load_ssh_config_for_plumbum(
             "~/.ssh/config", host
         )
 
@@ -81,12 +82,12 @@ class SSHWrapperPlumbum(SSHWrapper):
 
         if forward_agent == "yes":
             print("[ssh] forwarding local agent")
-            self._forward_local_agent(remote._client)
+            enable_agent_forwarding(remote._client)
 
         return remote
 
     def close(self):
-        self._connected = False
+        self.__connected = False
 
         if self._remote:
             self._remote.close()
@@ -95,7 +96,7 @@ class SSHWrapperPlumbum(SSHWrapper):
         self.interrupt_function()
 
     def isconnected(self):
-        return self._connected
+        return self.__connected
 
     # private methods
     def _update_interrupt_function(self, proc):
@@ -142,36 +143,6 @@ class SSHWrapperPlumbum(SSHWrapper):
         }
 
         self._remote.env.update(parsed_newenv)
-
-    def _load_ssh_config_for_plumbum(self, filename, host):
-        """Parse and postprocess ssh_config
-        """
-
-        conf = paramiko.config.SSHConfig()
-        expanded_path = os.path.expanduser(filename)
-
-        if os.path.exists(expanded_path):
-            with open(expanded_path) as ssh_config:
-                conf.parse(ssh_config)
-
-        lookup = conf.lookup(host)
-
-        plumbum_kwargs = dict(user=None, port=None, keyfile=None)
-
-        if "hostname" in lookup:
-            plumbum_hostname = lookup.pop("hostname")
-        else:
-            plumbum_hostname = host
-
-        if "port" in lookup:
-            plumbum_kwargs["port"] = int(lookup["port"])
-
-        plumbum_kwargs["user"] = lookup.get("user")
-        plumbum_kwargs["keyfile"] = lookup.get("identityfile")
-
-        forward_agent = lookup.get("forwardagent")
-
-        return (plumbum_hostname, plumbum_kwargs, forward_agent)
 
 
 def append_footer(cmd, marker):
@@ -247,3 +218,67 @@ def process_output(tuple_iterator, marker, print_function):
             print_function(line)
 
     return env_out
+
+
+def enable_agent_forwarding(paramiko_sshclient):
+    # SSH Agent Forwarding in Paramiko
+    # http://docs.paramiko.org/en/stable/api/agent.html#paramiko.agent.AgentRequestHandler
+    sess = paramiko_sshclient.get_transport().open_session()
+    paramiko.agent.AgentRequestHandler(sess)
+
+
+def load_ssh_config_for_plumbum(filename, host):
+    """Parse and postprocess ssh_config
+    and rename some keys for plumbum.ParamikoMachine.__init__()
+    """
+
+    conf = paramiko.config.SSHConfig()
+    expanded_path = os.path.expanduser(filename)
+
+    if os.path.exists(expanded_path):
+        with open(expanded_path) as ssh_config:
+            conf.parse(ssh_config)
+
+    lookup = conf.lookup(host)
+
+    plumbum_kwargs = dict(
+        user=None,
+        port=None,
+        keyfile=None,
+        load_system_ssh_config=False,
+        # TODO: Drop WarningPolicy
+        # This is need in current plumbum and wrapper implementation
+        # in case proxycommand is set.
+        missing_host_policy=paramiko.WarningPolicy(),
+    )
+
+    plumbum_host = host
+    if "hostname" in lookup:
+        plumbum_host = lookup.get("hostname")
+
+    if "port" in lookup:
+        plumbum_kwargs["port"] = int(lookup["port"])
+
+    plumbum_kwargs["user"] = lookup.get("user")
+    plumbum_kwargs["keyfile"] = lookup.get("identityfile")
+
+    if "proxycommand" in lookup:
+        plumbum_kwargs["load_system_ssh_config"] = True
+        # load_system_ssh_config: read system SSH config for ProxyCommand configuration.
+        # https://plumbum.readthedocs.io/en/latest/_modules/plumbum/machines/paramiko_machine.html
+
+        if lookup.get("hostname") != host:
+            msg = (
+                "can't handle both ProxyCommand and HostName at once, "
+                "please drop either"
+            )
+            raise ValueError(msg)
+        plumbum_host = host
+        # When load_system_ssh_config is True, plumbum_host must be Host
+        # instead of HostName.
+        # Otherwise parsing SSH config will fail in Plumbum.
+
+    # Plumbum doesn't support agent-forwarding
+    forward_agent = lookup.get("forwardagent")
+
+    return (plumbum_host, plumbum_kwargs, forward_agent)
