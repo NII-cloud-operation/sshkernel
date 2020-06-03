@@ -30,7 +30,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/nii-cloud-operation/sshkernel",
-    packages=["sshkernel"],
+    packages=["sshkernel", "sshkernel.magics"],
     classifiers=[
         "Framework :: IPython",
         "Framework :: Jupyter",
