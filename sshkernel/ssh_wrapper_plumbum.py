@@ -112,7 +112,7 @@ class SSHWrapperPlumbum(SSHWrapper):
         Return:
             int: exit_code
         """
-        env_at_footer = yaml.load(env_out)
+        env_at_footer = yaml.safe_load(env_out)
 
         newdir = env_at_footer["pwd"]
         newenv = env_at_footer["env"]
