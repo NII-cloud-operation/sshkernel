@@ -235,9 +235,9 @@ def load_ssh_config_for_plumbum(filename, host):
 
     conf = paramiko.config.SSHConfig()
     expanded_path = os.path.expanduser(filename)
-    
-    username_from_host=None
-    m = re.search('([^@]+)@(.*)', host)
+
+    username_from_host = None
+    m = re.search("([^@]+)@(.*)", host)
     if m:
         username_from_host = m.group(1)
         host = m.group(2)
@@ -268,7 +268,7 @@ def load_ssh_config_for_plumbum(filename, host):
 
     if not username_from_host:
         plumbum_kwargs["user"] = lookup.get("user")
-        
+
     plumbum_kwargs["keyfile"] = lookup.get("identityfile")
 
     if "proxycommand" in lookup:
